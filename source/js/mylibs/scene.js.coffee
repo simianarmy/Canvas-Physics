@@ -31,7 +31,7 @@ scene = ->
     canvas = $("#maincanvas").get(0)
     context = canvas.getContext('2d')
     context.scale(1, -1)
-    context.translate(0, -canvas.height);
+    context.translate(0, -canvas.height)
     
     # Make walls = canvas border
     walls = [new Line(0, 0, 0, canvas.height, {mass: Infinity}) # left

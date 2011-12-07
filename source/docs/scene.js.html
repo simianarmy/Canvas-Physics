@@ -1,0 +1,122 @@
+<!DOCTYPE html>  <html> <head>   <title>scene.js.coffee</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="Circle.js.html">                 Circle.js.coffee               </a>                                           <a class="source" href="Line.js.html">                 Line.js.coffee               </a>                                           <a class="source" href="Shape.js.html">                 Shape.js.coffee               </a>                                           <a class="source" href="collisions.js.html">                 collisions.js.coffee               </a>                                           <a class="source" href="scene.js.html">                 scene.js.coffee               </a>                                           <a class="source" href="vec.js.html">                 vec.js.coffee               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               scene.js.coffee             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>main animation loop runner
+Call new Scene() from anywhere in the script to setup the canvas</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>= require ./vec
+= require ./collisions
+= require ./Line
+= require ./Circle</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">NUM_GROUPED_CIRCLES = </span><span class="mi">3</span>
+<span class="nv">NUM_FREE_CIRCLES    = </span><span class="mi">3</span>
+<span class="nv">CIRCLE_RADIUS       = </span><span class="mi">20</span>
+<span class="nv">CIRCLE_COLORS       = </span><span class="p">[</span><span class="s1">&#39;#00A308&#39;</span><span class="p">,</span> <span class="s1">&#39;#FF0066&#39;</span><span class="p">,</span> <span class="s1">&#39;#3366FF&#39;</span><span class="p">,</span> <span class="s1">&#39;#CCCCCC&#39;</span><span class="p">,</span> <span class="s1">&#39;#FFCCFF&#39;</span><span class="p">]</span>
+<span class="nv">MAX_VELOCITY_X      = </span><span class="mi">200</span>
+<span class="nv">MAX_VELOCITY_Y      = </span><span class="mi">50</span>
+
+<span class="nv">scene = </span><span class="o">-&gt;</span>
+  <span class="nv">canvas = </span><span class="kc">null</span>
+  <span class="nv">lastTime = </span><span class="mi">0</span>
+  <span class="nv">circles = </span><span class="kc">null</span>
+  <span class="nv">walls = </span><span class="kc">null</span>
+  <span class="nv">canvas = </span><span class="kc">null</span>
+  <span class="nv">context = </span><span class="kc">null</span>
+  <span class="nv">ticks = </span><span class="mi">0</span>
+  <span class="nv">animating = </span><span class="kc">false</span>
+  <span class="nv">changeY = </span><span class="kc">false</span>
+  <span class="nv">freeY   = </span><span class="kc">false</span>
+  
+  <span class="nv">setup = </span><span class="o">-&gt;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s2">&quot;setting up objects&quot;</span>
+    
+    <span class="nv">canvas = </span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#maincanvas&quot;</span><span class="p">).</span><span class="nx">get</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="nv">context = </span><span class="nx">canvas</span><span class="p">.</span><span class="nx">getContext</span><span class="p">(</span><span class="s1">&#39;2d&#39;</span><span class="p">)</span>
+    <span class="nx">context</span><span class="p">.</span><span class="nx">scale</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="nx">context</span><span class="p">.</span><span class="nx">translate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span><span class="p">);</span>
+    </pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Make walls = canvas border</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nv">walls = </span><span class="p">[</span><span class="k">new</span> <span class="nx">Line</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span><span class="p">,</span> <span class="p">{</span><span class="nv">mass: </span><span class="kc">Infinity</span><span class="p">})</span> <span class="c1"># left</span>
+      <span class="p">,</span><span class="k">new</span> <span class="nx">Line</span><span class="p">(</span><span class="nx">canvas</span><span class="p">.</span><span class="nx">width</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span><span class="p">,</span> <span class="p">{</span><span class="nv">mass: </span><span class="kc">Infinity</span><span class="p">})</span> <span class="c1"># right</span>
+      <span class="p">,</span><span class="k">new</span> <span class="nx">Line</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">width</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">{</span><span class="nv">mass: </span><span class="kc">Infinity</span><span class="p">})</span> <span class="c1"># bottom</span>
+      <span class="p">,</span><span class="k">new</span> <span class="nx">Line</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">width</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">{</span><span class="nv">mass: </span><span class="kc">Infinity</span><span class="p">})</span> <span class="c1"># top</span>
+    <span class="p">]</span>
+      </pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>Make circles</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nv">circles = </span><span class="p">[]</span>
+    <span class="nv">cx = </span><span class="nx">CIRCLE_RADIUS</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="nv">cy = </span><span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span> <span class="err">/ 2</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>Free circles  </p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">for</span> <span class="nx">i</span> <span class="k">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">...</span><span class="nx">NUM_FREE_CIRCLES</span><span class="p">]</span>
+      <span class="nx">circles</span><span class="p">.</span><span class="nx">push</span> <span class="nx">createFreeCircle</span><span class="p">(</span><span class="nx">cx</span><span class="p">,</span> <span class="nx">cy</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span>
+      <span class="nx">cx</span> <span class="o">+=</span> <span class="nx">CIRCLE_RADIUS</span> <span class="o">*</span> <span class="mi">3</span>
+      
+    <span class="nx">cx</span> <span class="o">+=</span> <span class="nx">CIRCLE_RADIUS</span> <span class="o">*</span> <span class="mi">2</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>Fixed circles</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">for</span> <span class="nx">i</span> <span class="k">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">...</span><span class="nx">NUM_GROUPED_CIRCLES</span><span class="p">]</span>
+      <span class="nx">circles</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">Circle</span><span class="p">(</span><span class="nx">cx</span><span class="p">,</span> <span class="nx">cy</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">{</span>
+        <span class="nv">radius: </span><span class="nx">CIRCLE_RADIUS</span><span class="p">,</span>
+        <span class="nv">velocity: </span><span class="nx">Vector</span><span class="p">.</span><span class="nx">create</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="nv">color: </span><span class="nx">CIRCLE_COLORS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+      <span class="p">})</span>
+      <span class="nx">cx</span> <span class="o">+=</span> <span class="nx">CIRCLE_RADIUS</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s2">&quot;Created circle &quot;</span> <span class="o">+</span> <span class="nx">c</span> <span class="k">for</span> <span class="nx">c</span> <span class="k">in</span> <span class="nx">circles</span>
+    <span class="nx">drawScene</span><span class="p">()</span>
+    
+  <span class="nv">randomCircleColor = </span><span class="o">-&gt;</span>
+    <span class="nx">CIRCLE_COLORS</span><span class="p">[</span><span class="nx">getRandomInt</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nx">CIRCLE_COLORS</span><span class="p">.</span><span class="nx">length</span><span class="p">)]</span>
+    
+  <span class="nv">circleY = </span><span class="o">-&gt;</span> 
+    <span class="k">if</span> <span class="nx">freeY</span> <span class="k">then</span> <span class="nx">getRandom</span><span class="p">(</span><span class="o">-</span><span class="nx">MAX_VELOCITY_Y</span><span class="p">,</span> <span class="nx">MAX_VELOCITY_Y</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+      
+  <span class="nv">createFreeCircle = </span><span class="nf">(x, y, i) -&gt;</span>
+    <span class="nv">velx = </span><span class="nx">getRandom</span><span class="p">(</span><span class="o">-</span><span class="nx">MAX_VELOCITY_X</span><span class="p">,</span> <span class="nx">MAX_VELOCITY_X</span><span class="p">)</span>
+    <span class="k">new</span> <span class="nx">Circle</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span> <span class="nx">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">{</span>
+      <span class="nv">radius: </span><span class="nx">CIRCLE_RADIUS</span>
+      <span class="nv">velocity: </span><span class="nx">Vector</span><span class="p">.</span><span class="nx">create</span><span class="p">([</span><span class="nx">velx</span><span class="p">,</span> <span class="nx">circleY</span><span class="p">(),</span> <span class="mi">0</span><span class="p">])</span>
+      <span class="nv">color: </span><span class="nx">randomCircleColor</span><span class="p">()</span>
+    <span class="p">})</span>
+      
+  <span class="nv">updateCircleY = </span><span class="o">-&gt;</span>
+    <span class="k">for</span> <span class="nx">c</span> <span class="k">in</span> <span class="nx">circles</span>
+      <span class="nv">vel = </span><span class="nx">c</span><span class="p">.</span><span class="nx">velocity</span>
+      <span class="nv">c.velocity = </span><span class="nx">$V</span><span class="p">([</span><span class="nx">vel</span><span class="p">.</span><span class="nx">e</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nx">circleY</span><span class="p">(),</span> <span class="nx">vel</span><span class="p">.</span><span class="nx">e</span><span class="p">(</span><span class="mi">3</span><span class="p">)])</span>
+    
+  <span class="nv">updateBallCount = </span><span class="nf">(nballs) -&gt;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s2">&quot;new ball count: &quot;</span> <span class="o">+</span> <span class="nx">nballs</span>
+    <span class="nv">diff = </span><span class="nx">nballs</span> <span class="o">-</span> <span class="nx">circles</span><span class="p">.</span><span class="nx">length</span>
+    <span class="k">if</span> <span class="nx">diff</span> <span class="o">&gt;</span> <span class="mi">0</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>Add balls</p>             </td>             <td class="code">               <div class="highlight"><pre>      <span class="k">for</span> <span class="nx">i</span> <span class="k">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">..</span><span class="nx">diff</span><span class="p">]</span>
+        <span class="nx">circles</span><span class="p">.</span><span class="nx">push</span> <span class="nx">createFreeCircle</span><span class="p">(</span><span class="nx">getRandom</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">width</span><span class="p">),</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span><span class="err">/2, i)</span>
+    <span class="k">else</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <p>remove balls</p>             </td>             <td class="code">               <div class="highlight"><pre>      <span class="nx">circles</span><span class="p">.</span><span class="nx">pop</span><span class="p">()</span> <span class="k">for</span> <span class="nx">i</span> <span class="k">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">..(</span><span class="nx">circles</span><span class="p">.</span><span class="nx">length</span><span class="o">-</span><span class="nx">nballs</span><span class="p">)]</span>
+      
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s2">&quot;circles now: &quot;</span> <span class="o">+</span> <span class="nx">circles</span><span class="p">.</span><span class="nx">length</span>
+    
+  <span class="nv">drawCircle = </span><span class="nf">(c) -&gt;</span>
+    <span class="nv">context.fillStyle = </span><span class="nx">c</span><span class="p">.</span><span class="nx">color</span>
+    <span class="nx">context</span><span class="p">.</span><span class="nx">beginPath</span><span class="p">()</span>
+    <span class="nx">context</span><span class="p">.</span><span class="nx">arc</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">pos</span><span class="p">.</span><span class="nx">e</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nx">c</span><span class="p">.</span><span class="nx">pos</span><span class="p">.</span><span class="nx">e</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="nx">c</span><span class="p">.</span><span class="nx">radius</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">PI</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span> 
+    <span class="nx">context</span><span class="p">.</span><span class="nx">closePath</span><span class="p">();</span>
+    <span class="nx">context</span><span class="p">.</span><span class="nx">fill</span><span class="p">();</span>
+    
+  <span class="nv">toggleAnimation = </span><span class="o">-&gt;</span>
+    <span class="nv">animating = </span><span class="o">!</span><span class="nx">animating</span>
+    <span class="nv">lastTime = </span><span class="mi">0</span>
+    <span class="nx">tick</span><span class="p">()</span>
+
+  <span class="nv">toggleCirclesY = </span><span class="nf">(checked) -&gt;</span>
+    <span class="nv">changeY = </span><span class="kc">true</span>
+    <span class="nv">freeY   = </span><span class="nx">checked</span>
+      
+  <span class="nv">drawScene = </span><span class="o">-&gt;</span>
+    <span class="nx">context</span><span class="p">.</span><span class="nx">clearRect</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">width</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>Draw circles</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">drawCircle</span> <span class="nx">c</span> <span class="k">for</span> <span class="nx">c</span> <span class="k">in</span> <span class="nx">circles</span>
+  
+  <span class="nv">animate = </span><span class="o">-&gt;</span>
+    <span class="nv">timeNow = </span><span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nx">lastTime</span> <span class="o">!=</span> <span class="mi">0</span>
+      <span class="nv">elapsed = </span><span class="nx">timeNow</span> <span class="o">-</span> <span class="nx">lastTime</span>
+      <span class="nx">collisions</span><span class="p">.</span><span class="nx">checkCollisions</span> <span class="nx">elapsed</span><span class="p">,</span> <span class="nx">circles</span><span class="p">,</span> <span class="nx">walls</span>
+
+    <span class="nv">lastTime = </span><span class="nx">timeNow</span>
+
+  <span class="nv">tick = </span><span class="o">-&gt;</span>
+    <span class="nx">requestAnimFrame</span><span class="p">(</span><span class="nx">tick</span><span class="p">)</span> 
+    <span class="nx">drawScene</span><span class="p">()</span>
+    <span class="nx">animate</span><span class="p">()</span> <span class="k">if</span> <span class="nx">animating</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <p>change vertical velocity components if toggled</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="nx">changeY</span>
+      <span class="nx">updateCircleY</span><span class="p">()</span> 
+      <span class="nv">changeY = </span><span class="kc">false</span>
+
+    <span class="nx">ticks</span> <span class="o">+=</span> <span class="mi">1</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <p>Return public functions</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="p">{</span><span class="nx">setup</span><span class="p">,</span> <span class="nx">toggleAnimation</span><span class="p">,</span> <span class="nx">toggleCirclesY</span><span class="p">,</span> <span class="nx">updateBallCount</span><span class="p">}</span>
+
+<span class="nv">root = </span><span class="nx">exports</span> <span class="o">?</span> <span class="nb">window</span>
+<span class="nv">root.scene = </span><span class="nx">scene</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 
