@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <meta http-equiv="content-type" content="text/html;charset=utf-8"> 
+   <title>Drawing stuff with HTML5</title>
+
+<meta name="generator" content="- generator not found -">
+<meta name="author"    content="Marc Mauger" >
+
+<!-- S6 style sheet links -->
+<link rel="stylesheet" href="info.css" media="projection" id="styleProjection">
+<link rel="stylesheet" href="s6/screen.css"         media="screen"     id="styleScreen">
+<link rel="stylesheet" href="s6/print.css"          media="print">
+
+<!-- S6 JS -->
+<script src="s6/jquery.js"></script>
+<script src="s6/jquery.slideshow.js"></script>
+<script>
+  $(document).ready( function() {
+    Slideshow.init();
+  } );
+
+  
+</script>
+
+<!-- Better Browser Banner for Microsoft Internet Explorer (IE) -->
+<!--[if IE]>
+<script src="s6/jquery.microsoft.js"></script>
+<![endif]-->
+
+
+
+</head>
+<body>
+
+<div class="layout"> 
+  <div id="header"></div>
+  <div id="footer">
+    <h1></h1>
+    <h2></h2>
+  </div>
+</div>
+
+<div class="presentation">
+   
+<div class='slide '>
+<h1>Drawing in HTML5</h1><h3>What are the options?</h3>
+<ul>
+	<li>Canvas API</li>
+	<li>SVG</li>
+	<li>WebGL</li>
+</ul>
+
+</div>
+<div class='slide '>
+<h1>Canvas</h1><p>The canvas element is a bitmap drawing API, and once you’ve committed to a set of pixels, you’re stuck with them.</p>
+<ul>
+	<li>Treat it like a real painting canvas.</li>
+	<li>No concept of layers.</li>
+	<li><a href="http://www.nihilogic.dk/labs/canvas_sheet/HTML5_Canvas_Cheat_Sheet.png">The whole canvas API</a></li>
+</ul>
+
+</div>
+<div class='slide '>
+<h1>Drawing with Canvas</h1><h3>What is it good for?</h3>
+<p>The canvas element is good for pixel manipulation and highly active animations.</p>
+<ul>
+	<li>Javascript-centric</li>
+	<li>Pixel-oriented</li>
+	<li>Decent performance at 60 FPS</li>
+</ul>
+
+</div>
+<div class='slide '>
+<h1>Canvas is best suited for</h1><ul>
+	<li>drawing shapes</li>
+	<li>filling colours</li>
+	<li>creating gradients and patterns</li>
+	<li>rendering text</li>
+	<li>copying images, video frames, and other canvases</li>
+	<li>manipulating pixels</li>
+	<li>exporting the contents of a canvas to a static file.</li>
+</ul>
+
+</div>
+<div class='slide '>
+<h1>Live demo time</h1><ul>
+	<li><a href="http://localhost:4567/">Simple collisions &amp; geometric objects</a></li>
+	<li><a href="http://localhost:4567/bitmap.html">Bitmap drawings</a></li>
+</ul>
+
+</div>
+<div class='slide '>
+<h1>SVG</h1><p>SVG is the alternative drawing API.</p>
+<p>It’s vector-based and does support layers.</p>
+<p>SVG also exists in the DOM, making it easy to attach event handlers for interactivity, and it’s easier to deal 
+with collision detection (in games, for example).</p>
+<p>It also supports animation either through SMIL or JavaScript.</p>
+<p>There’s an excellent JavaScript library called <a href="http://raphaeljs.com/">Raphaël</a> that uses SVG to render images and animations.</p>
+
+</div>
+<div class='slide '>
+<h1>Drawing with SVG</h1><ul>
+	<li>You can draw an SVG file to the canvas just like PNGs</li>
+	<li>But&#8230;</li>
+	<li>More standard to use the HTML DOM as the &#8220;canvas&#8221;</li>
+	<li>Import SVG objects and &#8220;paths&#8221; and manipulate with Raphael</li>
+</ul>
+<h3>What is it good for?</h3>
+<ul>
+	<li>importing existing content (Illustrator)</li>
+	<li>Hit detection</li>
+	<li>Event handling</li>
+	<li>Animation, Effects, Events, Matrix math, &amp; lots more</li>
+</ul>
+
+</div>
+<div class='slide '>
+<h1>WebGL</h1><ul>
+	<li>Subset of OpenGL ES 2.0</li>
+	<li>3D Graphics using Javascript + GL Shader language</li>
+	<li>Load object files from Blender, Maya via Ajax or <strong>script</strong> tag</li>
+	<li>Super fast</li>
+</ul>
+<p>Very cool but hard to program.  
+Fun demos below:</p>
+<ul>
+	<li><a href="http://www.youtube.com/watch?v=fyfu4OwjUEI&amp;feature=player_embedded">Quake II</a></li>
+	<li><a href="http://lights.elliegoulding.com/">Lights</a></li>
+</ul>
+
+</div>
+<div class='slide '>
+<h1>Hybrids</h1><p>It&#8217;s possible to use all 3 drawing styles on a single web page.</p>
+<p>Is it possible to draw a 3D canvas onto a 2D canvas or vice versa?</p>
+<p><a href="http://www.android.com/">Canvas on Android.com</a></p>
+
+</div>
+<div class='slide '>
+<h1>More info</h1><ul>
+	<li><a href="http://www.youtube.com/watch?v=siOHh0uzcuY#t=17m00s">Intro to HTML5</a></li>
+	<li><a href="https://developer.mozilla.org/en/Canvas_tutorial">Mozilla Canvas Tutorial</a></li>
+	<li><a href="http://cocos2d-javascript.org/">Cocos2D-javascript</a></li>
+	<li>Cocos2d-js <a href="http://pbskids.org/catinthehat/games/hermitshellgame">Hermit Shell Game</a></li>
+	<li><a href="http://easeljs.com/">EaselJS</a>
+  Grant Skinner&#8217;s project
+  Active development by G.S. Active mailing list</li>
+	<li><a href="http://learningwebgl.com/blog/?page_id=1217">Learn WebGL Online Tutorials</a></li>
+</ul>
+</div>
+
+
+</div><!-- presentation -->
+</body>
+</html>

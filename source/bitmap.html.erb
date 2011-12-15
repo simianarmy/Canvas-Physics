@@ -1,0 +1,39 @@
+<% content_for(:head) do %>
+  <link href="css/bitmap.css" rel="stylesheet" type="text/css" media="screen" />
+<% end %>
+<div id="container">
+  <header>
+    <h1 class="title">Canvas: Bitmaps</h1>
+  </header>
+  <div id="main" role="main">
+    <ul id="controls">
+      <a id="scale" href="#">scale</a><br/>
+      <a id="rotate" href="#">rotate</a><br/>
+      <a id="scaleRotate" href="#">scale & rotate</a><br/>
+      <a id="border" href="#">add border</a><br/>
+      <a id="fill" href="#">fill frame</a><br/>
+      <a id="polys" href="#">show polygons</a><br/>
+      <a id="glow" href="#">draw real border</a><br/>
+      <a id="invertColor" href="#">invert color</a><br/>
+      <a id="export" href="#">save to png</a><br/>
+      <a id="reset" href="#">reset</a><br/>
+      Draw text <input type="text" size="15"/> <br/>
+      <input type="radio" name="hittest" value="1"> Alpha hit test<br/>
+      <input type="radio" name="hittest" value="2" checked="checked"> Polygon hit test<br/>
+      <div id="info"></div>
+    </ul>
+    <canvas id="hiddencanvas" width="600" height="500" style="display:none;"></canvas>
+    <canvas id="maincanvas" width="600" height="500"></canvas>
+    <ul id="drawingCommands">
+      Drawing commands<br/>
+    </ul>
+  </div>
+  <div style="clear:both;"></div>
+  <footer>
+    Source:
+    <a href="docs/bitmap.js.html">bitmap.js</a> |
+    <a href="docs/collisions.js.html">collisions</a>
+  </footer>
+</div> <!--! end of #container -->
+<script defer src="js/bitmap.js"></script>
+<script src="js/mylibs/mastershake.js"></script>

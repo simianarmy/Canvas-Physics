@@ -4,7 +4,6 @@
 
 $(document).ready ->
   sc = scene()
-  sc.setup()
 
   $('canvas').click ->
     sc.toggleAnimation()

@@ -1,0 +1,103 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Start off with some headers
+
+title: Drawing stuff with HTML5
+subtitle: A brief overview of HTML5 drawing techniques
+author: Marc Mauger
+
+
+h1. Drawing in HTML5
+
+h3. What are the options?
+
+* Canvas API
+* SVG
+* WebGL
+
+h1. Canvas
+
+The canvas element is a bitmap drawing API, and once you’ve committed to a set of pixels, you’re stuck with them.
+
+* Treat it like a real painting canvas.
+* No concept of layers.
+* "The whole canvas API":http://www.nihilogic.dk/labs/canvas_sheet/HTML5_Canvas_Cheat_Sheet.png
+
+h1. Drawing with Canvas
+
+h3. What is it good for?
+
+The canvas element is good for pixel manipulation and highly active animations. 
+* Javascript-centric
+* Pixel-oriented
+* Decent performance at 60 FPS
+
+h1. Canvas is best suited for
+
+* drawing shapes
+* filling colours
+* creating gradients and patterns
+* rendering text
+* copying images, video frames, and other canvases
+* manipulating pixels
+* exporting the contents of a canvas to a static file.
+
+h1. Live demo time
+
+* "Canvas on Android.com":http://www.android.com/
+* "Simple collisions & geometric objects":index.html
+* "Bitmap drawings":bitmap.html
+
+h1. SVG 
+
+* SVG is the alternative drawing API.
+* It’s vector-based and does support layers. 
+* SVG also exists in the DOM, making it easy to attach event handlers for interactivity, and it’s easier to deal 
+with collision detection (in games, for example). 
+* It also supports animation either through SMIL or JavaScript. 
+* There’s an excellent JavaScript library called "Raphaël":http://raphaeljs.com/ that uses SVG to render images and animations.
+
+h1. Drawing with SVG 
+
+* You can draw an SVG file to the canvas just like PNGs
+* But...
+* More standard to use the HTML DOM as the "canvas"
+* Import SVG objects and "paths" and manipulate with Raphael
+
+h3. What is it good for?
+
+* importing existing content (Illustrator)
+* Hit detection
+* Event handling
+* Animation, Effects, Events, Matrix math, & lots more
+
+h1. WebGL
+
+* Subset of OpenGL ES 2.0 
+* 3D Graphics using Javascript + GL Shader language
+* Load object files from Blender, Maya via Ajax or *script* tag
+* Super fast
+
+Very cool but hard to program.  
+Fun demos below:
+
+* "Quake II":http://www.youtube.com/watch?v=fyfu4OwjUEI&feature=player_embedded
+* "Lights":http://lights.elliegoulding.com/
+
+h1. Hybrids
+
+It's possible to use all 3 drawing styles on a single web page.
+
+Is it possible to draw a 3D canvas onto a 2D canvas or vice versa?
+
+h1. More info
+
+* "Intro to HTML5":http://www.youtube.com/watch?v=siOHh0uzcuY#t=17m00s
+* "Mozilla Canvas Tutorial":https://developer.mozilla.org/en/Canvas_tutorial
+* "Cocos2D-javascript":http://cocos2d-javascript.org/
+* Cocos2d-js "Hermit Shell Game":http://pbskids.org/catinthehat/games/hermitshellgame
+* "EaselJS":http://easeljs.com/
+  Grant Skinner's project
+  Active development by G.S. Active mailing list
+* "Learn WebGL Online Tutorials":http://learningwebgl.com/blog/?page_id=1217  
+
+  

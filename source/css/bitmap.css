@@ -1,0 +1,29 @@
+#main {
+  display: inline;
+  width: 100%;
+}
+
+ul#controls {
+  float: left;
+  width: 20%;
+}
+
+#maincanvas {
+  float: left;
+  width: 600px;
+  height: 500px;
+}
+
+#info {
+  float: left;
+  font-size: 12px;
+}
+
+ul#drawingCommands {
+  float: left;
+  list-style: none;
+}
+
+ul#drawingCommands li {
+  font-size: 12px;
+}

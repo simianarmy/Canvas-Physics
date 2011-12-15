@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<!--
+  Copyright 2011 Google Inc.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+  Original slides: Marcin Wichary (mwichary@google.com)
+  Modifications: Chrome DevRel Team (chrome-devrel@googlegroups.com)
+                 Alex Russell (slightlyoff@chromium.org)
+                 Brad Neuberg
+-->
+
+<!-- GB: modifications for s9 template pack:
+ 
+  o removed offline manifest
+  o removed disclaimer; it's just a prototype anyway
+  o removed google analytics script code
+  o removed google maps script code
+  o removed all slides
+
+  o in js/utils.js changed line 541pp queryAll('.transitionSlide')
+ 
+     - looks for h1 (not h2) and doesn't include img (icon)
+
+  o in styles/commons.css commented out rules for li and bullets
+ 
+   li {
+    list-style: none;
+    padding: 10px 0;
+   }
+   .bullets {
+  font-size: 40px;
+  }
+  .bullets li::before {
+    content: '· ';
+  }
+-->
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge;chrome=1" />
+    <title>Drawing stuff with HTML5</title>
+    <link href="http://fonts.googleapis.com/css?family=Droid+Sans|Droid+Sans+Mono" rel="stylesheet" type="text/css" />
+    <link id="prettify-link" href="src/prettify/prettify.css" rel="stylesheet" disabled />
+    <link href="styles/fonts.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="styles/presentation.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="styles/common.css" rel="stylesheet" type="text/css" media="screen" />
+    <link class="theme" href="styles/default.css" rel="stylesheet" type="text/css" media="screen" />
+    <link class="theme" href="styles/moon.css" rel="stylesheet" type="text/css" media="screen" />
+    <link class="theme" href="styles/sand.css" rel="stylesheet" type="text/css" media="screen"/>
+    <link class="theme" href="styles/sea_wave.css" rel="stylesheet" type="text/css" media="screen"/>
+  </head>
+  <body>
+    <div id="flex-container">
+    <nav id="helpers">
+      <button title="Previous slide" id="nav-prev" class="nav-prev">&#8701;</button> 
+      <button title="Jump to a random slide" id="slide-no">5</button> 
+      <button title="Next slide" id="nav-next" class="nav-next">&#8702;</button>
+      <menu>
+        <button type="checkbox" data-command="toc" title="Table of Contents" class="toc">TOC</button>
+        <!-- <button type="checkbox" data-command="resources" title="View Related Resources">&#9734;</button> -->
+        <button type="checkbox" data-command="notes" title="View Slide Notes">&#9999;</button>
+        <button type="checkbox" data-command="source" title="View slide source">&#8635;</button>
+        <button type="checkbox" data-command="help" title="View Help">?</button>
+      </menu>
+    </nav>
+    <div class="slides">
+      <div id="presentation-counter">Loading...</div>
+        <div class="slide" id="landing-slide">
+          <section class="middle">
+            <p>This presentation is an HTML5 website</p>
+            <p>Press <span id="left-init-key" class="key">&rarr;</span> key to advance.</p>
+          </section>
+          <aside class="note">
+            <section>
+              Welcome! (This field is for speaker notes and commentary.)
+            </section>
+          </aside> 
+        </div>
+
+        <div class="slide" id="controls-slide">
+          <header>Slides controls</header>
+          <section>
+            <ul>
+              <li><span class="key">&larr;</span> and <span class="key">&rarr;</span> to move around.</li>
+              <li><span class="key">Ctrl/Command</span> and <span class="key">+</span> or <span class="key">-</span> to zoom in and out if slides don’t fit.</li>
+              <li><span class="key">S</span> to view page source.</li>
+              <li><span class="key">T</span> to change the theme.</li>
+              <li><span class="key">H</span> to toggle syntax highlight.</li>
+              <li><span class="key">N</span> to toggle speaker notes.</li>
+              <li><span class="key">3</span> to toggle 3D effect.</li>
+              <li><span class="key">0</span> to toggle help.</li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="slide" id="title-slide">
+          <section class="middle">
+            <hgroup>
+              <h1>
+                Drawing stuff with HTML5
+              </h1>
+              <h2>
+                A brief overview of HTML5 drawing techniques
+              </h2>
+            </hgroup>
+          </section>
+        </div>
+
+        <div class="slide" id="table-of-contents">
+          <header><h1>Agenda - Table of Contents</h1></header>
+          <section>
+            <ul id="toc-list">
+            </ul>
+          </section>
+        </div>
+
+
+        
+        <div class="slide transitionSlide" id="slide2">
+          <header><h1>Drawing in HTML5</h1></header>
+          <section>
+              <h3>What are the options?</h3>
+<ul>
+	<li>Canvas API</li>
+	<li>SVG</li>
+	<li>WebGL</li>
+</ul>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide3">
+          <header><h1>Canvas</h1></header>
+          <section>
+              <p>The canvas element is a bitmap drawing API, and once you’ve committed to a set of pixels, you’re stuck with them.</p>
+<ul>
+	<li>Treat it like a real painting canvas.</li>
+	<li>No concept of layers.</li>
+	<li><a href="http://www.nihilogic.dk/labs/canvas_sheet/HTML5_Canvas_Cheat_Sheet.png">The whole canvas API</a></li>
+</ul>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide4">
+          <header><h1>Drawing with Canvas</h1></header>
+          <section>
+              <h3>What is it good for?</h3>
+<p>The canvas element is good for pixel manipulation and highly active animations.</p>
+<ul>
+	<li>Javascript-centric</li>
+	<li>Pixel-oriented</li>
+	<li>Decent performance at 60 FPS</li>
+</ul>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide5">
+          <header><h1>Canvas is best suited for</h1></header>
+          <section>
+              <ul>
+	<li>drawing shapes</li>
+	<li>filling colours</li>
+	<li>creating gradients and patterns</li>
+	<li>rendering text</li>
+	<li>copying images, video frames, and other canvases</li>
+	<li>manipulating pixels</li>
+	<li>exporting the contents of a canvas to a static file.</li>
+</ul>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide6">
+          <header><h1>Live demo time</h1></header>
+          <section>
+              <ul>
+	<li><a href="http://www.android.com/">Canvas on Android.com</a></li>
+	<li><a href="index.html">Simple collisions &amp; geometric objects</a></li>
+	<li><a href="bitmap.html">Bitmap drawings</a></li>
+</ul>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide7">
+          <header><h1>SVG</h1></header>
+          <section>
+              <ul>
+	<li>SVG is the alternative drawing API.</li>
+	<li>It’s vector-based and does support layers.</li>
+	<li>SVG also exists in the DOM, making it easy to attach event handlers for interactivity, and it’s easier to deal 
+with collision detection (in games, for example).</li>
+	<li>It also supports animation either through SMIL or JavaScript.</li>
+	<li>There’s an excellent JavaScript library called <a href="http://raphaeljs.com/">Raphaël</a> that uses SVG to render images and animations.</li>
+</ul>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide8">
+          <header><h1>Drawing with SVG</h1></header>
+          <section>
+              <ul>
+	<li>You can draw an SVG file to the canvas just like PNGs</li>
+	<li>But&#8230;</li>
+	<li>More standard to use the HTML DOM as the &#8220;canvas&#8221;</li>
+	<li>Import SVG objects and &#8220;paths&#8221; and manipulate with Raphael</li>
+</ul>
+<h3>What is it good for?</h3>
+<ul>
+	<li>importing existing content (Illustrator)</li>
+	<li>Hit detection</li>
+	<li>Event handling</li>
+	<li>Animation, Effects, Events, Matrix math, &amp; lots more</li>
+</ul>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide9">
+          <header><h1>WebGL</h1></header>
+          <section>
+              <ul>
+	<li>Subset of OpenGL ES 2.0</li>
+	<li>3D Graphics using Javascript + GL Shader language</li>
+	<li>Load object files from Blender, Maya via Ajax or <strong>script</strong> tag</li>
+	<li>Super fast</li>
+</ul>
+<p>Very cool but hard to program.  
+Fun demos below:</p>
+<ul>
+	<li><a href="http://www.youtube.com/watch?v=fyfu4OwjUEI&amp;feature=player_embedded">Quake II</a></li>
+	<li><a href="http://lights.elliegoulding.com/">Lights</a></li>
+</ul>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide10">
+          <header><h1>Hybrids</h1></header>
+          <section>
+              <p>It&#8217;s possible to use all 3 drawing styles on a single web page.</p>
+<p>Is it possible to draw a 3D canvas onto a 2D canvas or vice versa?</p>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide11">
+          <header><h1>More info</h1></header>
+          <section>
+              <ul>
+	<li><a href="http://www.youtube.com/watch?v=siOHh0uzcuY#t=17m00s">Intro to HTML5</a></li>
+	<li><a href="https://developer.mozilla.org/en/Canvas_tutorial">Mozilla Canvas Tutorial</a></li>
+	<li><a href="http://cocos2d-javascript.org/">Cocos2D-javascript</a></li>
+	<li>Cocos2d-js <a href="http://pbskids.org/catinthehat/games/hermitshellgame">Hermit Shell Game</a></li>
+	<li><a href="http://easeljs.com/">EaselJS</a>
+  Grant Skinner&#8217;s project
+  Active development by G.S. Active mailing list</li>
+	<li><a href="http://learningwebgl.com/blog/?page_id=1217">Learn WebGL Online Tutorials</a></li>
+</ul>
+
+          </section>
+        </div>
+        
+
+
+        <div id="speaker-note" class="invisible" style="display: none;"></div>
+        <aside id="help" class="sidebar invisible" style="display: none;">
+          <table>
+            <caption>Help</caption>
+            <tbody>
+              <tr>
+                <th>Move Around</th>
+                <td>&larr;&nbsp;&rarr;</td>
+              </tr>
+              <tr>
+                <th>Source File</th>
+                <td>s</td>
+              </tr>
+              <tr>
+                <th>Change Theme</th>
+                <td>t</td>
+              </tr>
+              <tr>
+                <th>Syntax Highlight</th>
+                <td>h</td>
+              </tr>
+              <tr>
+                <th>Speaker Notes</th>
+                <td>n</td>
+              </tr>
+              <tr>
+                <th>Toggle 3D</th>
+                <td>3</td>
+              </tr>
+              <tr>
+                <th>Help</th>
+                <td>0</td>
+              </tr>
+            </tbody>
+          </table>
+        </aside>
+
+    </div> <!-- slides -->
+    </div>
+    
+    <!--[if lt IE 9]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">
+    </script>
+    <script>CFInstall.check({ mode: "overlay" });</script>
+    <![endif]-->
+
+    <script src="src/prettify/prettify.js" onload="prettyPrint();" defer></script>
+    <script src="js/utils.js"></script>
+  </body>
+</html>

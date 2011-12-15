@@ -1,5 +1,4 @@
-# main animation loop runner
-# Call new Scene() from anywhere in the script to setup the canvas
+# Creates and animates canvas 
 
 #= require ./vec
 #= require ./collisions
@@ -13,6 +12,7 @@ CIRCLE_COLORS       = ['#00A308', '#FF0066', '#3366FF', '#CCCCCC', '#FFCCFF']
 MAX_VELOCITY_X      = 200
 MAX_VELOCITY_Y      = 50
 
+# the scene object
 scene = ->
   canvas = null
   lastTime = 0
@@ -25,11 +25,14 @@ scene = ->
   changeY = false
   freeY   = false
   
+  # setup
   setup = ->
     console.log "setting up objects"
     
+    # fetch and save the canvas context
     canvas = $("#maincanvas").get(0)
     context = canvas.getContext('2d')
+    # translate world for origin at bottom left
     context.scale(1, -1)
     context.translate(0, -canvas.height)
     
@@ -40,19 +43,18 @@ scene = ->
       ,new Line(0, canvas.height, canvas.width, 0, {mass: Infinity}) # top
     ]
       
-    # Make circles
     circles = []
     cx = CIRCLE_RADIUS * 2
     cy = canvas.height / 2
   
-    # Free circles  
+    # Make free circles  
     for i in [0...NUM_FREE_CIRCLES]
       circles.push createFreeCircle(cx, cy, i)
       cx += CIRCLE_RADIUS * 3
       
     cx += CIRCLE_RADIUS * 2
   
-    # Fixed circles
+    # Make fixed circles
     for i in [0...NUM_GROUPED_CIRCLES]
       circles.push new Circle(cx, cy, 0, {
         radius: CIRCLE_RADIUS,
@@ -64,12 +66,15 @@ scene = ->
     console.log "Created circle " + c for c in circles
     drawScene()
     
+  # Return a random circle color
   randomCircleColor = ->
     CIRCLE_COLORS[getRandomInt(1, CIRCLE_COLORS.length)]
     
+  # Return a y-value for a circle
   circleY = -> 
     if freeY then getRandom(-MAX_VELOCITY_Y, MAX_VELOCITY_Y) else 0
       
+  # Create and return a new (free) circle
   createFreeCircle = (x, y, i) ->
     velx = getRandom(-MAX_VELOCITY_X, MAX_VELOCITY_X)
     new Circle(x, y, 0, {
@@ -78,11 +83,13 @@ scene = ->
       color: randomCircleColor()
     })
       
+  # Assign new y-value to all circles
   updateCircleY = ->
     for c in circles
       vel = c.velocity
       c.velocity = $V([vel.e(1), circleY(), vel.e(3)])
     
+  # Update number of balls on screen
   updateBallCount = (nballs) ->
     console.log "new ball count: " + nballs
     diff = nballs - circles.length
@@ -96,6 +103,7 @@ scene = ->
       
     console.log "circles now: " + circles.length
     
+  # Draw a circle on the canvas
   drawCircle = (c) ->
     context.fillStyle = c.color
     context.beginPath()
@@ -103,41 +111,50 @@ scene = ->
     context.closePath();
     context.fill();
     
+  # toggle the animation on and off
   toggleAnimation = ->
     animating = !animating
     lastTime = 0
     tick()
 
+  # toggle circles' y-freedom...only used to 'free' them right now
   toggleCirclesY = (checked) ->
     changeY = true
     freeY   = checked
       
+  # draw all objects on the canvas
   drawScene = ->
     context.clearRect 0, 0, canvas.width, canvas.height
     # Draw circles
     drawCircle c for c in circles
-  
+    
+  # animate all objects
   animate = ->
+    # Pass latest timestep to the collision detection function
     timeNow = new Date().getTime()
     if lastTime != 0
       elapsed = timeNow - lastTime
       collisions.checkCollisions elapsed, circles, walls
 
-    lastTime = timeNow
-
-  tick = ->
-    requestAnimFrame(tick) 
-    drawScene()
-    animate() if animating
     # change vertical velocity components if toggled
     if changeY
       updateCircleY() 
       changeY = false
+      
+    lastTime = timeNow
 
+  # tick funtion
+  tick = ->
+    requestAnimFrame(tick) 
+    drawScene()
+    animate() if animating
     ticks += 1
 
+  # Initialize
+  setup()
+  
   # Return public functions
-  {setup, toggleAnimation, toggleCirclesY, updateBallCount}
+  {toggleAnimation, toggleCirclesY, updateBallCount}
 
 root = exports ? window
 root.scene = scene

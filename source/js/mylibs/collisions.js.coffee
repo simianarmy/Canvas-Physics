@@ -7,12 +7,32 @@ collisions = ->
   collisions.NONE     = -1
   collisions.EMBEDDED = -2
   
-  # intersectionTime
-  # 
-  # @param {Vector} p1 - point1
-  # @param {Vector} v1 - point1 displacement
-  # @param {Vector} p2 - point2
-  # @param {Vector} v2 - point2 displacement
+  # intersection
+  # Finds the point where 2 lines AB and CD intersect
+  # @returns {Number} time 
+  intersection = (a, b, c, d) ->
+    tc1 = b.e(1) - a.e(1)
+    tc2 = b.e(2) - a.e(2)
+    sc1 = c.e(1) - d.e(1)
+    sc2 = c.e(2) - d.e(2)
+    con1 = c.e(1) - a.e(1)
+    con2 = c.e(2) - a.e(2)
+    det = tc2 * sc1 - tc1 * sc2
+    return 0 if det is 0
+    con = tc2 * con1 - tc1 * con2
+    s = con / det
+    return false if s < 0 or s > 1
+    if tc1 != 0
+      (con1 - s * sc1) / tc1
+    else
+      (con2 - s * sc2) / tc2
+    
+  
+  # intersectionTime  
+  # @param {Vector} p1 - point1  
+  # @param {Vector} v1 - point1 displacement  
+  # @param {Vector} p2 - point2  
+  # @param {Vector} v2 - point2 displacement  
   # @returns {Number} time of intersection
   intersectionTime = (p1, v1, p2, v2) ->
     tc1 = v1.e(1)
@@ -27,6 +47,11 @@ collisions = ->
     con = sc1 * con2 - sc2 * con1
     con / det
     
+  # circleCircleCollision
+  # Detect collision between 2 circles  
+  # @returns {Array}  
+  #   0: {Number} time to collision  
+  #   1: {Vector} collision normal
   circleCircleCollision = (c1, c2) ->
     w = c1.pos.subtract(c2.pos)
     r = c1.radius + c2.radius
@@ -49,14 +74,12 @@ collisions = ->
     collisionNormal.toUnitVector()
     [t, collisionNormal]
     
-  # circleWallCollision
-  # Detect collision between circle and wall
-  #
-  # @returns {Array}
-  #   0: {Number} time to collision
-  #   1: {Vector} collision normal
+  # circleWallCollision  
+  # Detect collision between circle and wall  
+  # @returns {Array}  
+  #   0: {Number} time to collision  
+  #   1: {Vector} collision normal  
   circleWallCollision = (c, wall) ->
-    #console.log "circleWallCollision circle: " + c.pos.inspect()
     t = collisions.NONE
     collisionNormal = null
     n = wall.vec.normal().toUnitVector()
@@ -87,14 +110,12 @@ collisions = ->
   isImpendingCollision = (ts) ->
     0 < ts <= 1
   
-  # General purpose collision detection for arbitrary shapes
-  # 
-  # @param {Shape} s1 - first shape object
-  # @param {Shape} s2 - 2nd shape object
-  # @returns {Array} 
-  #   0: Vector - collisionNormal - set to normal of point of collision if collision is detected
-  #   1: Number - time to collision
-  #
+  # General purpose collision detection for arbitrary shapes  
+  # @param {Shape} s1 - first shape object  
+  # @param {Shape} s2 - 2nd shape object  
+  # @returns {Array}  
+  #   0: {Number} time to collision  
+  #   1: {Vector} collision normal
   detectCollision = (s1, s2) ->
     switch s1.name
       when 'Circle'
@@ -108,16 +129,16 @@ collisions = ->
       else
         console.log "Unknown shape: " + s1
   
-  # resolveCollisionFree
-
-  # Sets velocity of 2 objects with any mass after elastic collision along normal
-  # @params: 2 objects and normal of collision
+  # resolveCollisionFree  
+  #
+  # Sets velocity of 2 objects with any mass after elastic collision along normal  
+  # @params: 2 objects and normal of collision  
   resolveCollisionFree = (s1, s2, n) ->
-    #console.log "resolving collision for " + s1 + ", " + s2
     r = s1.mass / s2.mass
     base = s2.velocity.dup()
     baseIsZero = base.eql Vector.Zero()
     u = null
+
     # If base has zero velocity and objects are the same type, simply switch velocities
     if baseIsZero
       if (s1.name == s2.name)
@@ -137,22 +158,22 @@ collisions = ->
     s1.velocity = if baseIsZero then ut else ut.add(base)
     s2.velocity = if baseIsZero then wn else wn.add(base)
   
-  # resolveCollision
+  # resolveCollision  
   #                                                   
-  # General purpose collision resolution for arbitrary shapes
-  # @param {Shape} s1 - first shape object               
-  # @param {Shape} s2 - 2nd shape object              
-  # @param {Vector} n - collision normal
+  # General purpose collision resolution for arbitrary shapes  
+  # @param {Shape} s1 - first shape object  
+  # @param {Shape} s2 - 2nd shape object            
+  # @param {Vector} n - collision normal  
   resolveCollision = (s1, s2, n) ->
     resolveCollisionFree s1, s2, n
  
   # Collision detection+resolution on all scene objects
   # Side effects: moves objects and changes their velocity based  on 
-  # any collision interactions
+  # any collision interactions  
   #
-  # @param {Number} timestep since last call
-  # @param {Array} moving objects
-  # @param {Array} fixed objects
+  # @param {Number} timestep since last call  
+  # @param {Array} moving objects  
+  # @param {Array} fixed objects  
   checkCollisions = (ts, moving, fixed) ->
     #console.log "checkCollisions " + ts
     mn = 2
@@ -212,8 +233,48 @@ collisions = ->
     nextts = ts * (1 - mn)
     checkCollisions(nextts, moving, fixed) if nextts > Sylvester.precision
   
+  # determine if a point lies inside a triangle
+  # using alg. from http://www.blackpawn.com/texts/pointinpoly/default.html
+  pointInTriangle = (pt, triangle) ->
+    #console.log "pointInTriangle pnt #{pt.inspect()}"
+    #console.log "triangle: #{triangle.toString()}"
+    sameSide = (p1, p2, a, b) ->
+      cp1 = b.subtract(a).cross(p1.subtract(a))
+      cp2 = b.subtract(a).cross(p2.subtract(a))
+      cp1.dot(cp2) >= 0
+    
+    [a, b, c] = triangle.points
+    sameSide(pt, a, b, c) and sameSide(pt, b, a, c) and sameSide(pt, c, a, b)
+  
+  pointInPolygon = (pt, poly) ->
+    # Use faster pointInTriangle test if possible
+    return pointInTriangle(pt, poly) if poly.points.length == 3
+    
+    # choose an arbitrary point outside the polygon
+    # set mx to the max x-value in poly
+    vxs = (v.e(1) for v in poly.points)
+    mx = Math.max vxs...
+    outpoint = $V([mx + 10, 0, 0])
+    
+    # add beginning point to end for the last line segment
+    poly.points.push(poly.points[0])
+    # now count the intersections along the ray from pt to outpoint
+    intersections = 0
+    c = poly.points.length
+    for i in [0...c-1]
+      p1 = poly.points[i]
+      p2 = poly.points[(i%c)+1]
+      throw "error in pointInPolygon for index #{i}" unless p1? and p2?
+      t = intersection(p1, p2, pt, outpoint)
+      if isImpendingCollision(t)
+        #console.log "intersection in #{t} for #{pt.inspect()} in #{p1.inspect()} #{p2.inspect()}"
+        intersections += 1
+    
+    # if number of intersections is odd, then point is inside polygon 
+    (intersections % 2) == 1
+
   # Return public functions
-  {checkCollisions}
+  {checkCollisions, pointInTriangle, pointInPolygon}
   
 root = exports ? window
 root.collisions = collisions()
