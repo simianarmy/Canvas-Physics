@@ -1,5 +1,6 @@
-# Creates and animates canvas 
+# Creates and animates SVG circles 
 
+#= require 'libs/raphael-min'
 #= require ./vec
 #= require ./collisions
 #= require ./Line
@@ -7,19 +8,20 @@
 
 NUM_GROUPED_CIRCLES = 3
 NUM_FREE_CIRCLES    = 3
-CIRCLE_RADIUS       = 20
+CIRCLE_RADIUS       = 30
 CIRCLE_COLORS       = ['#00A308', '#FF0066', '#3366FF', '#CCCCCC', '#FFCCFF']
 MAX_VELOCITY_X      = 200
 MAX_VELOCITY_Y      = 50
 
 # the scene object
-scene = ->
-  canvas = null
+scene = (opts) ->
+  bw = opts.width
+  bh = opts.height
+  clearFunc = opts.clearFunc
+  drawFunc = opts.drawFunc
   lastTime = 0
   circles = null
   walls = null
-  canvas = null
-  context = null
   ticks = 0
   animating = false
   changeY = false
@@ -29,23 +31,16 @@ scene = ->
   setup = ->
     console.log "setting up objects"
     
-    # fetch and save the canvas context
-    canvas = $("#maincanvas").get(0)
-    context = canvas.getContext('2d')
-    # translate world for origin at bottom left
-    context.scale(1, -1)
-    context.translate(0, -canvas.height)
-    
     # Make walls = canvas border
-    walls = [new Line(0, 0, 0, canvas.height, {mass: Infinity}) # left
-      ,new Line(canvas.width, 0, 0, canvas.height, {mass: Infinity}) # right
-      ,new Line(0, 0, canvas.width, 0, {mass: Infinity}) # bottom
-      ,new Line(0, canvas.height, canvas.width, 0, {mass: Infinity}) # top
+    walls = [new Line(0, 0, 0, bh, {mass: Infinity}) # left
+      ,new Line(bw, 0, 0, bh, {mass: Infinity}) # right
+      ,new Line(0, 0, bw, 0, {mass: Infinity}) # bottom
+      ,new Line(0, bh, bw, 0, {mass: Infinity}) # top
     ]
       
     circles = []
     cx = CIRCLE_RADIUS * 2
-    cy = canvas.height / 2
+    cy = bh / 2
   
     # Make free circles  
     for i in [0...NUM_FREE_CIRCLES]
@@ -96,20 +91,12 @@ scene = ->
     if diff > 0
       # Add balls
       for i in [1..diff]
-        circles.push createFreeCircle(getRandom(0, canvas.width), canvas.height/2, i)
+        circles.push createFreeCircle(getRandom(0, bw), bh/2, i)
     else
       # remove balls
       circles.pop() for i in [1..(circles.length-nballs)]
       
     console.log "circles now: " + circles.length
-    
-  # Draw a circle on the canvas
-  drawCircle = (c) ->
-    context.fillStyle = c.color
-    context.beginPath()
-    context.arc(c.pos.e(1), c.pos.e(2), c.radius, 0, Math.PI*2, true); 
-    context.closePath();
-    context.fill();
     
   # toggle the animation on and off
   toggleAnimation = ->
@@ -124,9 +111,9 @@ scene = ->
       
   # draw all objects on the canvas
   drawScene = ->
-    context.clearRect 0, 0, canvas.width, canvas.height
+    clearFunc.call() if clearFunc?
     # Draw circles
-    drawCircle c for c in circles
+    drawFunc.call(this, c) for c in circles
     
   # animate all objects
   animate = ->

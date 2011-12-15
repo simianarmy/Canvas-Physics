@@ -28,6 +28,7 @@ h3. What is it good for?
 
 The canvas element is good for pixel manipulation and highly active animations. 
 * Javascript-centric
+* Immediate-mode
 * Pixel-oriented
 * Decent performance at 60 FPS
 
@@ -44,23 +45,24 @@ h1. Canvas is best suited for
 h1. Live demo time
 
 * "Canvas on Android.com":http://www.android.com/
-* "Simple collisions & geometric objects":index.html
-* "Bitmap drawings":bitmap.html
+* "Canvas: Simple collisions & geometric objects":balls.html
+* "Canvas: Bitmap drawings":bitmap.html
 
 h1. SVG 
 
+* "W3C spec":http://www.w3.org/TR/SVG11/
 * SVG is the alternative drawing API.
 * It’s vector-based and does support layers. 
+* Retain-mode
 * SVG also exists in the DOM, making it easy to attach event handlers for interactivity, and it’s easier to deal 
 with collision detection (in games, for example). 
 * It also supports animation either through SMIL or JavaScript. 
-* There’s an excellent JavaScript library called "Raphaël":http://raphaeljs.com/ that uses SVG to render images and animations.
 
 h1. Drawing with SVG 
 
 * You can draw an SVG file to the canvas just like PNGs
-* But...
 * More standard to use the HTML DOM as the "canvas"
+* There’s an excellent JavaScript library called "Raphaël":http://raphaeljs.com/ that uses SVG to render images and animations.
 * Import SVG objects and "paths" and manipulate with Raphael
 
 h3. What is it good for?
@@ -69,6 +71,11 @@ h3. What is it good for?
 * Hit detection
 * Event handling
 * Animation, Effects, Events, Matrix math, & lots more
+
+h1. Live demo time
+
+* "SVG: Simple collisions & geometric objects":svgballs.html
+* "Animations using Raphael.js":http://raphaeljs.com/animation.html
 
 h1. WebGL
 

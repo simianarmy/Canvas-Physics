@@ -1,22 +1,20 @@
 <div id="container">
   <header>
-    <h1 class="title">Canvas: Geometric shapes w/physics</h1>
+    <h1 class="title">HTML5 Drawing</h1>
   </header>
   <div id="main" role="main">
-    <ul id="controls">
-      <li><input type="range" name="num_balls" min="5" max="75" step="1" value="5"> 
-        <span id="nballs">5</span> Balls
-      </li>
-    </ul>
-    Click on canvas to play or pause
-    <canvas id="maincanvas" width="800" height="600"></canvas>
     <p>
-      <h2><a id="free" href="#">Freedom!</a></h2>
+      <%= link_to "Slideshow", 'info.html5.html' %>
+    </p>
+    <p>
+      <%= link_to "Canvas: Balls", 'balls.html' %>
+    </p>
+    <p>
+      <%= link_to "Canvas: Bitmaps", 'bitmap.html' %>
+    </p>
+    <p>
+      <%= link_to "SVG: Balls", 'svgballs.html' %>
     </p>
   </div>
-  <footer>
-    Source: 
-    <a href="docs/scene.js.html">scene</a> | <a href="docs/collisions.js.html">collisions</a>
-  </footer>
-</div> <!--! end of #container -->
-<script defer src="js/index.js"></script>
+</div>
+    
