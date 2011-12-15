@@ -163,6 +163,7 @@
 <p>The canvas element is good for pixel manipulation and highly active animations.</p>
 <ul>
 	<li>Javascript-centric</li>
+	<li>Immediate-mode</li>
 	<li>Pixel-oriented</li>
 	<li>Decent performance at 60 FPS</li>
 </ul>
@@ -193,8 +194,8 @@
           <section>
               <ul>
 	<li><a href="http://www.android.com/">Canvas on Android.com</a></li>
-	<li><a href="index.html">Simple collisions &amp; geometric objects</a></li>
-	<li><a href="bitmap.html">Bitmap drawings</a></li>
+	<li><a href="balls.html">Canvas: Simple collisions &amp; geometric objects</a></li>
+	<li><a href="bitmap.html">Canvas: Bitmap drawings</a></li>
 </ul>
 
 
@@ -205,12 +206,13 @@
           <header><h1>SVG</h1></header>
           <section>
               <ul>
+	<li><a href="http://www.w3.org/TR/SVG11/">W3C spec</a></li>
 	<li>SVG is the alternative drawing API.</li>
 	<li>It’s vector-based and does support layers.</li>
+	<li>Retain-mode</li>
 	<li>SVG also exists in the DOM, making it easy to attach event handlers for interactivity, and it’s easier to deal 
 with collision detection (in games, for example).</li>
 	<li>It also supports animation either through SMIL or JavaScript.</li>
-	<li>There’s an excellent JavaScript library called <a href="http://raphaeljs.com/">Raphaël</a> that uses SVG to render images and animations.</li>
 </ul>
 
 
@@ -222,8 +224,8 @@ with collision detection (in games, for example).</li>
           <section>
               <ul>
 	<li>You can draw an SVG file to the canvas just like PNGs</li>
-	<li>But&#8230;</li>
 	<li>More standard to use the HTML DOM as the &#8220;canvas&#8221;</li>
+	<li>There’s an excellent JavaScript library called <a href="http://raphaeljs.com/">Raphaël</a> that uses SVG to render images and animations.</li>
 	<li>Import SVG objects and &#8220;paths&#8221; and manipulate with Raphael</li>
 </ul>
 <h3>What is it good for?</h3>
@@ -239,6 +241,18 @@ with collision detection (in games, for example).</li>
         </div>
         
         <div class="slide transitionSlide" id="slide9">
+          <header><h1>Live demo time</h1></header>
+          <section>
+              <ul>
+	<li><a href="svgballs.html">SVG: Simple collisions &amp; geometric objects</a></li>
+	<li><a href="http://raphaeljs.com/animation.html">Animations using Raphael.js</a></li>
+</ul>
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide10">
           <header><h1>WebGL</h1></header>
           <section>
               <ul>
@@ -258,7 +272,7 @@ Fun demos below:</p>
           </section>
         </div>
         
-        <div class="slide transitionSlide" id="slide10">
+        <div class="slide transitionSlide" id="slide11">
           <header><h1>Hybrids</h1></header>
           <section>
               <p>It&#8217;s possible to use all 3 drawing styles on a single web page.</p>
@@ -268,7 +282,7 @@ Fun demos below:</p>
           </section>
         </div>
         
-        <div class="slide transitionSlide" id="slide11">
+        <div class="slide transitionSlide" id="slide12">
           <header><h1>More info</h1></header>
           <section>
               <ul>
