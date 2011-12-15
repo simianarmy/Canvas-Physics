@@ -132,44 +132,58 @@ bitmapDemo = (bitmap) ->
   imagePixels = ->
     hcontext.clearRect(0, 0, cw, ch)
     hcontext.drawImage(img, imgX, imgY)
-    hcontext.getImageData(imgX, imgY, img.width, img.height).data
+    hcontext.getImageData(0, 0, cw, ch).data
     
   # create the image border index map
   makeImageBorderMap = ->
     imgPixels ?= imagePixels()
     imgBorderMap = []
-    # left to right pass
     outside = true
-    for y in [0...img.width]
-      for x in [0...img.height]
+    
+    alphaCheck = (i) ->
+      # if alpha is not 100%, it's an image pixel
+      if imgPixels[i + 3] > 0
+        # outside to inside detection
+        if outside
+          outside = false
+          imgBorderMap.push(i)
+      else if !outside # inside to outside detection
+        outside = true
+        imgBorderMap.push(i)
+
+    # horizontal pass
+    for y in [0...cw]
+      for x in [0...ch]
         idx = ((cw * y) + x) * 4
+        alphaCheck idx
+    
+    # vertical pass
+    outside = true
+    for x in [0...cw]
+      for y in [0...ch]
+        idx = ((cw * y) + x) * 4
+        alphaCheck idx
         
-        # if alpha is not 100%, it's an image pixel
-        if imgPixels[idx + 3] > 0
-          # outside to inside detection
-          if outside
-            outside = false
-            imgBorderMap.push(idx)
-        else if !outside # inside to outside detection
-          outside = true
-          imgBorderMap.push(idx)
     imgBorderMap
     
   # attempt shape border effect on bitmap
   glow = ->
     imgBorderMap ?= makeImageBorderMap()
-    imgd = context.getImageData(imgX, imgY, img.width, img.height)
+    imgd = context.getImageData(0, 0, cw, ch)
     pix = imgd.data
 
     applyBorder = (idx) ->
-      pix[idx  ] = 255 # red
-    
+      #idx -= 15*4
+      pix[idx ] = 255 # red
+      pix[idx+1] = 0
+      pix[idx+2] = 0
+      pix[idx+3] = 255
+      
     # Loop over border pixels and make them red
     for idx in imgBorderMap
-      for i in [-4..4]
-        applyBorder idx + (i * 4)
+      applyBorder idx
     
-    context.putImageData(imgd, imgX, imgY)
+    context.putImageData(imgd, 0, 0)
     
   # invert the bitmaps non-alpha pixel colors
   invertColor = ->
