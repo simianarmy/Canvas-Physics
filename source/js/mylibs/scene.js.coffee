@@ -8,7 +8,7 @@
 
 NUM_GROUPED_CIRCLES = 3
 NUM_FREE_CIRCLES    = 3
-CIRCLE_RADIUS       = 30
+CIRCLE_RADIUS       = 20
 CIRCLE_COLORS       = ['#00A308', '#FF0066', '#3366FF', '#CCCCCC', '#FFCCFF']
 MAX_VELOCITY_X      = 200
 MAX_VELOCITY_Y      = 50
@@ -63,7 +63,7 @@ scene = (opts) ->
     
   # Return a random circle color
   randomCircleColor = ->
-    CIRCLE_COLORS[getRandomInt(1, CIRCLE_COLORS.length)]
+    CIRCLE_COLORS[getRandomInt(1, CIRCLE_COLORS.length)-1]
     
   # Return a y-value for a circle
   circleY = -> 
@@ -141,7 +141,7 @@ scene = (opts) ->
   setup()
   
   # Return public functions
-  {toggleAnimation, toggleCirclesY, updateBallCount}
+  {toggleAnimation, toggleCirclesY, updateBallCount, randomCircleColor}
 
 root = exports ? window
 root.scene = scene

@@ -208,6 +208,7 @@ collisions = ->
         n = collisionNormal.dup()
         ob1 = s1
         ob2 = s2
+        s1.collided = s2.collided = true
         
     for i in [(moving.length-1)..0]
       for j in [(i-1)..0]
