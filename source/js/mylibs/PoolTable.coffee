@@ -171,8 +171,22 @@ PoolTable = (ctxt, opts) ->
   # Initialize
   setup()
   
+  # Public functions
+  
+  updateCue = (mousePos) ->
+    cueRotation = (ballPos, mpos) ->
+      v = ballPos.subtract(mpos.add(voff))
+      if v.mag() > 0
+        ang = Math.atan(v.e(2), v.e(1))
+        ang * 180 / Math.PI
+      else
+        console.log "error"
+    
+    cueRot = cueRotation balls[0].pos, $V([mousePos.x, mousePos.y, 0])
+    console.log "cue rotation: #{cueRot}"
+    
   # Return public functions
-  {}
+  {updateCue}
 
 root = exports ? window
 root.PoolTable = PoolTable
