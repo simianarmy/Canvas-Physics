@@ -225,9 +225,6 @@ header {
 #ballbox {
   width: 600px;
   height: 500px;
-}
-
-canvas, #ballbox {  
   border: 2px solid black;
 }
 

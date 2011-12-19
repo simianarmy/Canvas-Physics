@@ -1,0 +1,5 @@
+if [[ -s "/Users/marcmauger/.rvm/environments/ruby-1.9.2-p290" ]] ; then
+  . "/Users/marcmauger/.rvm/environments/ruby-1.9.2-p290"
+else
+  rvm --create use "ruby-1.9.2-p290"
+fi
