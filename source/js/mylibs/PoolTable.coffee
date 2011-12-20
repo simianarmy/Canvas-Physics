@@ -11,7 +11,7 @@ POCKET_SIZE         = 1.7
 JAW_SIZE            = BALL_RADIUS / 2
 DECELARATION        = 0
 CUSHION_EFFICIENCY  = 0
-BALL_COLORS         = ['white', 'yellow', 'blue', 'red', 'purple', 'orange', 'green', 'maroon',
+BALL_COLORS         = ['grey', 'yellow', 'blue', 'red', 'purple', 'orange', 'green', 'maroon',
                       'yellow', 'blue', 'red', 'purple', 'orange', 'green', 'maroon', 'black']
 
 # the pool table object
@@ -26,12 +26,15 @@ PoolTable = (ctxt, opts) ->
   jawSize           = opts.jawSize ? JAW_SIZE
   frictionDecelartion = opts.decelaration ? DECELARATION
   cushionEfficiency = opts.efficiency ? CUSHION_EFFICIENCY
+  cueImg    = null
+  cuePos    = null
+  cueRot    = 0
   balls     = []
   cushions  = []
   pockets   = []
   jaws      = []
-  xoffset   = 10
-  yoffset   = 10
+  xoffset   = cw / 4
+  yoffset   = 100
   voff      = null
   ticks = 0
   lastTime = 0
@@ -79,6 +82,9 @@ PoolTable = (ctxt, opts) ->
     # Make balls
     createBalls()
     
+    # Make pool cue
+    createCue()
+    
     drawScene()
     
   createBalls = ->
@@ -117,6 +123,10 @@ PoolTable = (ctxt, opts) ->
         moving: false
         }) 
   
+  createCue = ->
+    cueImg = new Image
+    cueImg.src = '/img/poolcue.png'
+    
   drawTable = ->
     context.save()
     context.strokeStyle = 'black';
@@ -138,6 +148,13 @@ PoolTable = (ctxt, opts) ->
       context.closePath();
       context.fill();
 
+  drawCue = ->
+    cuePos ?= balls[0].pos.subtract($V([0, ballRadius, 0]))
+    context.save()
+#    context.rotate(cueRot)
+    context.drawImage(cueImg, cuePos.e(1) - cueImg.width/2, cuePos.e(2) - cueImg.height, cueImg.width, cueImg.height)
+    context.restore()
+    
   # toggle the animation on and off
   toggleAnimation = ->
     animating = !animating
@@ -150,6 +167,7 @@ PoolTable = (ctxt, opts) ->
     # Draw table
     drawTable()
     drawBalls()
+    drawCue()
     
   # animate all objects
   animate = ->
@@ -184,6 +202,7 @@ PoolTable = (ctxt, opts) ->
     
     cueRot = cueRotation balls[0].pos, $V([mousePos.x, mousePos.y, 0])
     console.log "cue rotation: #{cueRot}"
+    drawScene()
     
   # Return public functions
   {updateCue}

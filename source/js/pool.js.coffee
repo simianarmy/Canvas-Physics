@@ -13,13 +13,13 @@ $(document).ready ->
   sc = PoolTable(context, {
     width: canvas.width
     height: canvas.height
-    tableSize: canvas.height / 2 - 100
+    tableSize: 300
   })
   cevents = canvasEvents(canvas)
 
   mouseMove = (evt) ->
     pnt = cevents.mouseMove(evt)
-    sc.updateCue(pnt) if shooting
+    sc.updateCue(pnt) unless shooting
       
   mouseDown = (evt) ->
     pnt = cevents.mouseDown(evt)
