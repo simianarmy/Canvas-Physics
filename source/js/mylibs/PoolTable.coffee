@@ -8,7 +8,7 @@
 NUM_BALLS           = 16
 BALL_RADIUS         = 10
 POCKET_SIZE         = 1.7
-JAW_SIZE            = BALL_RADIUS / 2
+JAW_SIZE            = 0.5
 DECELARATION        = 0
 CUSHION_EFFICIENCY  = 0
 BALL_COLORS         = ['grey', 'yellow', 'blue', 'red', 'purple', 'orange', 'green', 'maroon',
@@ -33,6 +33,7 @@ PoolTable = (ctxt, opts) ->
   cushions  = []
   pockets   = []
   jaws      = []
+  jawArcRadius = 0
   xoffset   = cw / 4
   yoffset   = 100
   voff      = null
@@ -61,11 +62,13 @@ PoolTable = (ctxt, opts) ->
     for wall in cushions
       wall.pos = wall.pos.add(voff)
       
-    pw = ballRadius * jawSize
+    # pw is the radius of the circular arcs at the pocket entrances
+    jawArcRadius = pw = rs * jawSize
+    
     # Use walls as guide to draw jaws
     for wall in cushions
       if wall.vec.e(1) == 0 # this is a vertical wall
-        if wall.pos.e(1) > tableSize # its on the right
+        if wall.pos.e(1) > tableSize/2 # its on the right
           jaws.push wall.pos.add($V([pw, 0, 0]))
           jaws.push wall.pos.add(wall.vec).add($V([pw, 0, 0]))
         else # its on the left
@@ -127,21 +130,53 @@ PoolTable = (ctxt, opts) ->
     cueImg = new Image
     cueImg.src = '/img/poolcue.png'
     
+  # Convenience vector creator for points
+  point = (x, y) ->
+    $V([x, y, 0])
+    
   drawTable = ->
+    # Draw the cushions
     context.save()
-    context.strokeStyle = 'black';
-    #context.lineWidth = 3;
+    context.strokeStyle = 'black'
     for wall in cushions
       endpoint = wall.pos.add(wall.vec)
       context.moveTo wall.pos.e(1), wall.pos.e(2)
       context.lineTo endpoint.e(1), endpoint.e(2)
-  
     context.stroke()
     context.restore()
     
+    # Draw the pocket corneres
+    pt = $V([jawArcRadius, jawArcRadius, 0])
+    context.save()
+    context.strokeStyle = 'grey'
+    for j in jaws      
+      # scale for ellipse?
+      #context.scale(0.75, 1)
+      context.beginPath()
+      context.arc(j.subtract(pt).e(1), j.add(pt).e(2), jawArcRadius*2, 0, Math.PI*2, false)
+      context.stroke()
+      context.closePath()
+
+    # Draw the pockets
+    xx = voff.e(1) + tableSize
+    yy = voff.e(2) * 2/3
+    b = 1
+    pockets = [point(yy+b/3, yy+b/3), 
+      point(xx, yy+b/3),
+      point(yy, xx),
+      point(xx+b/3, xx),
+      point(yy+b/3, xx*2-b),
+      point(xx, xx*2-b),
+    ]
+    pt = point(ballRadius * pocketSize, ballRadius * pocketSize)
+    for p in pockets
+      context.beginPath()
+      context.arc(p.subtract(pt).e(1), p.add(pt).e(2), jawArcRadius, 0, Math.PI*2, false)
+      context.stroke()
+      context.closePath()
+      
   drawBalls = ->
     for ball in balls
-      console.log "drawing ball #{ball}"
       context.fillStyle = ball.color
       context.beginPath()
       context.arc(ball.x(), ball.y(), ball.radius, 0, Math.PI*2, true);
@@ -151,8 +186,10 @@ PoolTable = (ctxt, opts) ->
   drawCue = ->
     cuePos ?= balls[0].pos.subtract($V([0, ballRadius, 0]))
     context.save()
-#    context.rotate(cueRot)
-    context.drawImage(cueImg, cuePos.e(1) - cueImg.width/2, cuePos.e(2) - cueImg.height, cueImg.width, cueImg.height)
+    context.translate cuePos.e(1), cuePos.e(2)
+    context.rotate cueRot
+    context.translate(-cueImg.width/2, -cueImg.height)
+    context.drawImage(cueImg, 0, 0, cueImg.width, cueImg.height)
     context.restore()
     
   # toggle the animation on and off
@@ -195,7 +232,7 @@ PoolTable = (ctxt, opts) ->
     cueRotation = (ballPos, mpos) ->
       v = ballPos.subtract(mpos.add(voff))
       if v.mag() > 0
-        ang = Math.atan(v.e(2), v.e(1))
+        ang = Math.atan2(v.e(2), v.e(1))
         ang * 180 / Math.PI
       else
         console.log "error"
