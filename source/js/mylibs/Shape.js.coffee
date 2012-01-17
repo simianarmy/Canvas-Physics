@@ -7,10 +7,11 @@ class Shape
   constructor: (x, y, z, opts={}) ->
     @pos = $V([x, y, z])
     @mass = @efficiency = 1.0
-    @displacement     = null # vector 
     @collisionNormal  = null # vector
     @[x] = val for x, val of opts
-    @velocity ?= Vector.Zero()
+    @velocity ?= Vector.Zero(3)
+    @displacement ?= Vector.Zero(3)
+    @direction ?= Vector.Zero(3)
     
   move: (vec) ->
     @pos = @pos.add(vec)

@@ -56,8 +56,8 @@ collisions = ->
     w = c1.pos.subtract(c2.pos)
     r = c1.radius + c2.radius
     ww = w.dot(w)
-    if w < Math.pow(r, 2)
-      console.log "EMBEDDED"
+    if (ww+Sylvester.precision) < (r*r)
+      console.log "CIRCLE EMBEDDED"
       return collisions.EMBEDDED
     
     v = c1.displacement.subtract(c2.displacement)
@@ -70,8 +70,7 @@ collisions = ->
     t = (-b - Math.sqrt(root)) / a
     return collisions.NONE unless isImpendingCollision t
     
-    collisionNormal = w.add(v.x(t))
-    collisionNormal.toUnitVector()
+    collisionNormal = w.add(v.x(t)).toUnitVector()
     [t, collisionNormal]
     
   # circleWallCollision  
@@ -87,7 +86,7 @@ collisions = ->
     an = oa.dot(n)
     
     if (Math.abs(an) < c.radius)
-      console.log "EMBEDDED"
+      console.log "WALL EMBEDDED"
       return collisions.EMBEDDED
     
     r = null
@@ -129,6 +128,45 @@ collisions = ->
       else
         console.log "Unknown shape: " + s1
   
+  # resolveInelasticCollisionFree
+  #
+  # Sets velocity of 2 objects with any mass after inelastic collision along normal  
+  # @params: 2 objects and normal of collision
+  resolveInelasticCollisionFree = (s1, s2, n) ->
+    r = s1.mass / s2.mass
+    u = ob1.velocity.subtract(s2.velocity)
+    e = ob1.efficiency * ob2.efficiency
+    un = u.component(n)
+    ut = u.subtract(un).x(n).mag()
+    sq = r*r * un*un - (r+1) * ((r-e) * un*un + (1-e) * ut*ut)
+    vn = n.x(Math.sqrt(sq) - r*un).div(r+1)
+    wn = (n.x(un).subtract(vn)).x(r)
+    s1.velocity = s2.velocity.add(vn.add(ut))
+    s2.velocity = wn.add(s2.velocity)
+    
+  # resolveInelasticCollisionFixed
+  #
+  # Sets velocity of 2 objects with equal mass after inelastic collision along normal  
+  # @params: 2 objects and normal of collision
+  resolveInelasticCollisionFixed = (s1, s2, n) ->
+    e = s1.efficiency * s2.efficiency
+    un = s1.velocity.componentVector(n)
+    ut = s1.velocity.subtract(un)
+    sq = Math.sqrt(e)
+    vn = un.x(-1).x(sq)
+    s1.velocity = ut.add(vn)
+      
+  # resolveCollisionEqualMass
+  #
+  # Sets velocity of 2 objects with equal mass after elastic collision along normal  
+  # @params: 2 objects and normal of collision  
+  resolveCollisionEqualMass = (s1, s2, n) ->
+    u = s1.velocity.subtract(s2.velocity)
+    un = u.componentVector(n)
+    ut = u.subtract(un)
+    s1.velocity = ut.add(s2.velocity)
+    s2.velocity = un.add(s2.velocity)
+    
   # resolveCollisionFree  
   #
   # Sets velocity of 2 objects with any mass after elastic collision along normal  
@@ -136,14 +174,14 @@ collisions = ->
   resolveCollisionFree = (s1, s2, n) ->
     r = s1.mass / s2.mass
     base = s2.velocity.dup()
-    baseIsZero = base.eql Vector.Zero()
+    baseIsZero = base.eql Vector.Zero(3)
     u = null
 
     # If base has zero velocity and objects are the same type, simply switch velocities
     if baseIsZero
       if (s1.name == s2.name)
         s2.velocity = s1.velocity.dup()
-        s1.velocity = Vector.Zero()
+        s1.velocity = Vector.Zero(3)
         return
       u = s1.velocity.dup() # Sylvester doesn't like subtracting by zero
     else
@@ -165,7 +203,10 @@ collisions = ->
   # @param {Shape} s2 - 2nd shape object            
   # @param {Vector} n - collision normal  
   resolveCollision = (s1, s2, n) ->
-    resolveCollisionFree s1, s2, n
+    if s1.mass == s2.mass
+      resolveCollisionEqualMass s1, s2, n
+    else
+      resolveCollisionFree s1, s2, n
  
   # Collision detection+resolution on all scene objects
   # Side effects: moves objects and changes their velocity based  on 
@@ -275,7 +316,13 @@ collisions = ->
     (intersections % 2) == 1
 
   # Return public functions
-  {checkCollisions, pointInTriangle, pointInPolygon}
+  {checkCollisions, 
+  detectCollision, 
+  isImpendingCollision,
+  resolveCollision,
+  resolveInelasticCollisionFixed,
+  pointInTriangle, 
+  pointInPolygon}
   
 root = exports ? window
 root.collisions = collisions()

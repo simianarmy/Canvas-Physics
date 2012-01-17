@@ -6,8 +6,8 @@
 #= require ./Line
 #= require ./Circle
 
-NUM_GROUPED_CIRCLES = 3
-NUM_FREE_CIRCLES    = 3
+NUM_GROUPED_CIRCLES = 4
+NUM_FREE_CIRCLES    = 1
 CIRCLE_RADIUS       = 20
 CIRCLE_COLORS       = ['#00A308', '#FF0066', '#3366FF', '#CCCCCC', '#FFCCFF']
 MAX_VELOCITY_X      = 200
