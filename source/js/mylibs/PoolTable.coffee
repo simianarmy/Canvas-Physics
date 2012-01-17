@@ -15,6 +15,8 @@ CUEING_SCALE        = 10
 BALL_COLORS         = ['white', 'yellow', 'blue', 'red', 'purple', 'orange', '#00DD00', 'maroon',
                       'yellow', 'blue', 'red', 'purple', 'orange', '#00DD00', 'maroon', 'black']
 
+Array::remove = (e) -> @[t..t] = [] if (t = @indexOf(e)) > -1
+
 # the pool table object
 PoolTable = (ctxt, opts) ->
   context = ctxt
@@ -38,8 +40,8 @@ PoolTable = (ctxt, opts) ->
   cueing    = false
   balls     = []
   cushions  = []
-  pockets   = []
   jaws      = []
+  
   jawArcRadius = 0
   xoffset   = cw / 4
   yoffset   = 100
@@ -76,10 +78,10 @@ PoolTable = (ctxt, opts) ->
     jawArcRadius = pw = ballRadius * jawSize
     
     createPocket = (v) ->
-      new Circle(v.e(1), v.e(2), 0, {radius: jawArcRadius})
+      new Circle(v.e(1), v.e(2), 0, {radius: ballRadius})
       
     createJaw = (v, orientation) ->
-      p = createPocket v
+      p = new Circle(v.e(1), v.e(2), 0, {radius: jawArcRadius})
       # code below is for drawing jaws as ellipses.  not currently used
       if orientation == 'v'
         p.width = pw
@@ -108,21 +110,20 @@ PoolTable = (ctxt, opts) ->
     
     # Create the pockets
     xx = voff.e(1) + tableSize
-    yy = voff.e(2) * 2/3
-    b = 1
-    pockets = [createPocket(point(yy+b/3, yy+b/3)), 
-      createPocket(point(xx, yy+b/3)),
-      createPocket(point(yy, xx)),
-      createPocket(point(xx+b/3, xx)),
-      createPocket(point(yy+b/3, xx*2-b)),
-      createPocket(point(xx, xx*2-b))
-    ]
+    sideOffset = ballRadius * pocketSize
+    b = 2
+    jaws.push createPocket(point(xoffset-b, yoffset-b)) # left top
+    jaws.push createPocket(point(xx+b, yoffset-b)) # right top
+    jaws.push createPocket(point(xoffset-sideOffset, tableSize+yoffset))  #m middle left
+    jaws.push createPocket(point(xx+sideOffset, tableSize+yoffset)) # middle right
+    jaws.push createPocket(point(xoffset-b, yoffset+b+tableSize*2)) # left bottom
+    jaws.push createPocket(point(xx+b, yoffset+b+tableSize*2)) # right bottom
+
     # Make balls
     createBalls()
-    
     # Make pool cue
     createCue()
-    
+    # Turn on animation
     toggleAnimation()
     
   createBalls = ->
@@ -180,6 +181,7 @@ PoolTable = (ctxt, opts) ->
     context.stroke()
     
   
+  # Unused but working
   drawEllipse = (c, width, height) ->
     centerX = c.x()
     centerY = c.y()
@@ -199,10 +201,8 @@ PoolTable = (ctxt, opts) ->
     context.closePath();
 
   drawJaw = (j) ->
-    # scale for ellipse?
-    #context.scale(0.75, 1)
     context.beginPath()
-    context.arc(j.x(), j.y(), j.radius, 0, Math.PI*4, false)
+    context.arc(j.x(), j.y(), j.radius, 0, Math.PI*2, false)
     #drawEllipse(j, j.width, j.height)
     context.stroke()
     context.closePath()
@@ -224,13 +224,6 @@ PoolTable = (ctxt, opts) ->
     context.strokeStyle = 'grey'
     for j in jaws
       drawJaw(j)
-
-    #pt = point(ballRadius * pocketSize, ballRadius * pocketSize)
-    for p in pockets
-      context.beginPath()
-      context.arc(p.x(), p.y(), jawArcRadius, 0, Math.PI*2, false)
-      context.stroke()
-      context.closePath()
       
   drawBalls = ->
     for ball in balls
@@ -303,6 +296,9 @@ PoolTable = (ctxt, opts) ->
       # Adjust moving flag in case ball has stopped
       b.moving = ballIsMoving(b)
   
+  removePocketed = (ball) ->
+    balls.remove(ball)
+    
   # Pool game specific collision detection
   # @param {Number} timestep since last call  
   # @param {Array} moving objects  
@@ -328,7 +324,7 @@ PoolTable = (ctxt, opts) ->
         s2.displacement = displacement(ts, s2.velocity)
 
         [collisionTime, collisionNormal] = collisions.detectCollision s1, s2
-          
+        
         return unless collisions.isImpendingCollision(collisionTime)
         console.log "#{objType} collision in #{collisionTime}!"
 
@@ -358,11 +354,10 @@ PoolTable = (ctxt, opts) ->
             #console.log "detecting collision b/w ball #{b1.number} and cushion"
             detectCollisionHelper b1, w, "wall"
         
-          # check for ball pocketing
-          #for p in pockets
-            #console.log "detecting collision b/w ball #{b1.number} and pocket"
-            #detectCollisionHelper b1, p, "wall"
-      
+        # check for ball pocketing
+        for p in pockets
+          detectCollisionHelper b1, p, "pocket"
+
       # if there is no collision we are finished
       break if mn == 2
       
@@ -377,6 +372,9 @@ PoolTable = (ctxt, opts) ->
         collisions.resolveInelasticCollisionFixed(ob1, ob2, n)
         ob1.speed = ob1.velocity.mag()
         ob1.direction = ob1.velocity.toUnitVector()
+      else if tp == "pocket"
+        console.log "pocketing ball #{ob1.number}"
+        removePocketed ob1
       else
         console.log "resolving collision b/w #{ob1.number} & #{ob2.number}"
         collisions.resolveCollision ob1, ob2, n
@@ -417,7 +415,7 @@ PoolTable = (ctxt, opts) ->
     timeNow = new Date().getTime()
     if lastTime != 0
       elapsed = timeNow - lastTime
-      moveBalls(elapsed, balls, cushions, pockets)
+      moveBalls(elapsed, balls, cushions, jaws)
         
     lastTime = timeNow
 
