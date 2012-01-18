@@ -78,10 +78,10 @@ PoolTable = (ctxt, opts) ->
     jawArcRadius = pw = ballRadius * jawSize
     
     createPocket = (v) ->
-      new Circle(v.e(1), v.e(2), 0, {radius: ballRadius})
+      new Circle(v.e(1), v.e(2), 0, {radius: ballRadius, mass: Infinity, speed: 0})
       
     createJaw = (v, orientation) ->
-      p = new Circle(v.e(1), v.e(2), 0, {radius: jawArcRadius})
+      p = new Circle(v.e(1), v.e(2), 0, {radius: jawArcRadius, mass: Infinity, speed: 0})
       # code below is for drawing jaws as ellipses.  not currently used
       if orientation == 'v'
         p.width = pw
@@ -110,7 +110,7 @@ PoolTable = (ctxt, opts) ->
     
     # Create the pockets
     xx = voff.e(1) + tableSize
-    sideOffset = ballRadius * pocketSize
+    sideOffset = ballRadius * 2/3
     b = 2
     jaws.push createPocket(point(xoffset-b, yoffset-b)) # left top
     jaws.push createPocket(point(xx+b, yoffset-b)) # right top
@@ -126,16 +126,18 @@ PoolTable = (ctxt, opts) ->
     # Turn on animation
     toggleAnimation()
     
+  cuestartPos = ->
+    $V([tableSize/2, 2*tableSize/5, 0]).add(voff)
+    
   createBalls = ->
     r = ballRadius * 1.02 # Add space between racked balls for initial collision resolutions
-    cuestart = $V([tableSize/2, 2*tableSize/5, 0]).add(voff)
     y = Math.sqrt(3.0) * r
     tristart = $V([tableSize/2, tableSize*3/2, 0]).add(voff)
      
     # Racked ball positions
     ballPosition = (i) ->
       switch i
-        when 1 then cuestart
+        when 1 then cuestartPos()
         when 2 then tristart
         when 3 then tristart.add $V([-r, y, 0])
         when 4 then tristart.add $V([r, y, 0])
@@ -180,7 +182,6 @@ PoolTable = (ctxt, opts) ->
     context.lineTo endpoint.e(1), endpoint.e(2)
     context.stroke()
     
-  
   # Unused but working
   drawEllipse = (c, width, height) ->
     centerX = c.x()
@@ -226,7 +227,7 @@ PoolTable = (ctxt, opts) ->
       drawJaw(j)
       
   drawBalls = ->
-    for ball in balls
+    for ball in balls when not ball.pocketed
       context.fillStyle = ball.color
       context.beginPath()
       context.arc(ball.x(), ball.y(), ball.radius, 0, Math.PI*2, true);
@@ -253,12 +254,12 @@ PoolTable = (ctxt, opts) ->
     context.drawImage(cueImg, 0, 0, cueImg.width, cueImg.height)
     context.restore()
     
-    # if lastCuePos?
-    #       cuev = balls[0].pos.subtract(lastCuePos).x(10)
-    #       # draw guide line
-    #       context.save()
-    #       drawLine(new Line(balls[0].pos.e(1), balls[0].pos.e(2), cuev.e(1), cuev.e(2)))
-    #       context.restore()
+    if lastCuePos?
+      cuev = balls[0].pos.subtract(lastCuePos).x(10)
+      # draw guide line
+      context.save()
+      drawLine(new Line(balls[0].pos.e(1), balls[0].pos.e(2), cuev.e(1), cuev.e(2)))
+      context.restore()
   
   cueAngle = (cuePos) ->
     v = balls[0].pos.subtract(cuePos)
@@ -297,8 +298,21 @@ PoolTable = (ctxt, opts) ->
       b.moving = ballIsMoving(b)
   
   removePocketed = (ball) ->
-    balls.remove(ball)
+    ball.pocketed = true
+    ball.speed = 0
+    ball.pos = Vector.Zero(3)
     
+  cueBall = ->
+    balls[0]
+
+  isScratched = ->
+    cueBall().pocketed
+  
+  resetCueBall = ->
+    b = cueBall()
+    b.pocketed = false
+    b.pos = cuestartPos()
+      
   # Pool game specific collision detection
   # @param {Number} timestep since last call  
   # @param {Array} moving objects  
@@ -317,6 +331,9 @@ PoolTable = (ctxt, opts) ->
       collisionTime = 0
       tp = null
 
+      # helper function for checking potential collision and saving 
+      # collisions details if any
+      # @returns {float} collision time if pending collision, else null
       detectCollisionHelper = (s1, s2, objType) ->
         s1.velocity = s1.direction.x(s1.speed)
         s2.velocity = s2.direction.x(s2.speed)
@@ -325,7 +342,7 @@ PoolTable = (ctxt, opts) ->
 
         [collisionTime, collisionNormal] = collisions.detectCollision s1, s2
         
-        return unless collisions.isImpendingCollision(collisionTime)
+        return null unless collisions.isImpendingCollision(collisionTime)
         console.log "#{objType} collision in #{collisionTime}!"
 
         m = Math.min(mn, collisionTime)
@@ -337,7 +354,10 @@ PoolTable = (ctxt, opts) ->
           ob2 = s2
           s1.collided = s2.collided = true
           tp = objType
-          
+        
+        collisionTime
+      
+      # Check each ball for collision
       for i in [0...balls.length]
         b1 = balls[i]
 
@@ -354,10 +374,11 @@ PoolTable = (ctxt, opts) ->
             #console.log "detecting collision b/w ball #{b1.number} and cushion"
             detectCollisionHelper b1, w, "wall"
         
-        # check for ball pocketing
-        for p in pockets
-          detectCollisionHelper b1, p, "pocket"
-
+          # check for ball pocketing
+          for p in pockets
+            if detectCollisionHelper(b1, p, "pocket") != null
+              console.log "pocket collision detected"
+            
       # if there is no collision we are finished
       break if mn == 2
       
@@ -407,7 +428,9 @@ PoolTable = (ctxt, opts) ->
     # Draw table
     drawTable()
     drawBalls()
-    drawCue() unless ballsMoving()
+    unless ballsMoving()
+      drawCue() 
+      resetCueBall() if isScratched()
     
   # animate all objects
   animate = ->
