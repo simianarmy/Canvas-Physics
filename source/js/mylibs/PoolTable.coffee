@@ -5,10 +5,11 @@
 #= require ./Line
 #= require ./Circle
 
+DRAW_GUIDES         = false
 NUM_BALLS           = 16
 BALL_RADIUS         = 10
 POCKET_SIZE         = 1.7
-JAW_SIZE            = 1.2
+JAW_SIZE            = 1.4
 DECELARATION        = .9
 CUSHION_EFFICIENCY  = 0.7
 CUEING_SCALE        = 10
@@ -29,6 +30,7 @@ PoolTable = (ctxt, opts) ->
   jawSize           = opts.jawSize ? JAW_SIZE
   frictionDecelaration = opts.decelaration ? DECELARATION
   cushionEfficiency = opts.efficiency ? CUSHION_EFFICIENCY
+  onEndTurnCb       = opts.onEndTurn
   cueImg    = null
   cuePos    = null
   cueRot    = 0
@@ -49,7 +51,9 @@ PoolTable = (ctxt, opts) ->
   ticks = 0
   lastTime = 0
   animating = false
-  eightBallIdx = -1
+  # turn based state vars
+  shooting = false
+  pocketedOnTurn = []
   
   # setup
   setup = ->
@@ -57,8 +61,8 @@ PoolTable = (ctxt, opts) ->
     rs = ballRadius * pocketSize
     rd = ballRadius * Math.sqrt(2.0) * pocketSize
     
-    console.log "Table size: #{tableSize}\nball radius: #{ballRadius}\npocket size: #{pocketSize}\njaw size: #{jawSize}"
-    console.log "rs: #{rs}, rd: #{rd}"
+    console.debug "Table size: #{tableSize}\nball radius: #{ballRadius}\npocket size: #{pocketSize}\njaw size: #{jawSize}"
+    console.debug "rs: #{rs}, rd: #{rd}"
     wallOpts = {mass: Infinity, efficiency: cushionEfficiency}
     
     # Make table cushions
@@ -163,16 +167,12 @@ PoolTable = (ctxt, opts) ->
         speed: 0
         pocketed: false
         moving: false
-        number: i
+        number: i-1
         }) 
     
     # Save original positions for replay
     for b in balls
       b.origPos = b.pos.dup()
-    
-    # Save eight ball array index for optimization
-    for i in in [0...NUM_BALLS]
-      eightBallIdx = i if balls[i].number == 8
       
   createCue = ->
     cueImg = new Image
@@ -210,6 +210,12 @@ PoolTable = (ctxt, opts) ->
     context.stroke()
     context.closePath();
 
+  drawBallNumber = (b) ->
+    context.fillStyle    = '#FFFFFF'
+    context.font         = '10px Arial sans-serif'
+    context.textBaseline = 'top'
+    context.fillText b.number, b.x()-5, b.y()-5
+      
   drawJaw = (j) ->
     context.beginPath()
     context.arc(j.x(), j.y(), j.radius, 0, Math.PI*2, false)
@@ -229,11 +235,12 @@ PoolTable = (ctxt, opts) ->
     context.fillRect(voff.e(1), voff.e(2), tableSize, tableSize * 2)
     
     # Draw the pocket corners
-    pt = $V([jawArcRadius, jawArcRadius, 0])
-    context.save()
-    context.strokeStyle = 'grey'
-    for j in jaws
-      drawJaw(j)
+    if DRAW_GUIDES
+      pt = $V([jawArcRadius, jawArcRadius, 0])
+      context.save()
+      context.strokeStyle = 'grey'
+      for j in jaws
+        drawJaw(j)
       
   drawBalls = ->
     for ball in balls when not ball.pocketed
@@ -242,6 +249,7 @@ PoolTable = (ctxt, opts) ->
       context.arc(ball.x(), ball.y(), ball.radius, 0, Math.PI*2, true);
       context.closePath();
       context.fill();
+      drawBallNumber(ball) unless ball.number == 0 or ball.number == 15
 
   drawCue = ->
     # Wait until cue image fully loaded
@@ -263,7 +271,7 @@ PoolTable = (ctxt, opts) ->
     context.drawImage(cueImg, 0, 0, cueImg.width, cueImg.height)
     context.restore()
     
-    if lastCuePos?
+    if DRAW_GUIDES and lastCuePos?
       cuev = balls[0].pos.subtract(lastCuePos).x(10)
       # draw guide line
       context.save()
@@ -309,19 +317,23 @@ PoolTable = (ctxt, opts) ->
     ball.pocketed = true
     ball.speed = 0
     ball.pos = Vector.Zero(3)
+    pocketedOnTurn.push ball
     
   cueBall = ->
     balls[0]
 
   eightBall = ->
-    balls[eightBallIdx]
+    balls[15]
 
   isScratched = ->
     cueBall().pocketed
   
   isEightBallScratched = ->
     # TODO: Take current player's color into consideration
-    eightBall().pocketed and ballsInPlay() > 1
+    eightBall().pocketed and (ballsInPlay() > 1)
+    
+  isOwnBallPocketed = ->
+    pocketedOnTurn.length > 0
     
   resetCueBall = ->
     b = cueBall()
@@ -363,7 +375,7 @@ PoolTable = (ctxt, opts) ->
         [collisionTime, collisionNormal] = collisions.detectCollision s1, s2
         
         return null unless collisions.isImpendingCollision(collisionTime)
-        console.log "#{objType} collision in #{collisionTime}!"
+        #console.log "#{objType} collision in #{collisionTime}!"
 
         m = Math.min(mn, collisionTime)
         # If collision is most imminent, save objects' info
@@ -416,7 +428,7 @@ PoolTable = (ctxt, opts) ->
         console.log "pocketing ball #{ob1.number}"
         removePocketed ob1
       else
-        console.log "resolving collision b/w #{ob1.number} & #{ob2.number}"
+        #console.log "resolving collision b/w #{ob1.number} & #{ob2.number}"
         collisions.resolveCollision ob1, ob2, n
         ob1.speed = ob1.velocity.mag()
         ob2.speed = ob2.velocity.mag()
@@ -451,6 +463,11 @@ PoolTable = (ctxt, opts) ->
       drawCue() 
       resetCueBall() if isScratched()
       newGame() if isEightBallScratched()
+      # handle end of turn
+      if shooting
+        shooting = false
+        unless isOwnBallPocketed()
+          onEndTurnCb.call(this) if onEndTurnCb
     
   # animate all objects
   animate = ->
@@ -490,12 +507,14 @@ PoolTable = (ctxt, opts) ->
   makeShot = (cueSpeed) ->
     console.log "Shooting with speed: #{cueSpeed} and dir #{cueVec.inspect()}"
     cueing = false
+    shooting = true
     balls[0].direction = cueVec.dup()
     balls[0].speed = cueSpeed
     balls[0].moving = true
+    pocketedOnTurn = []
     
   # Return public functions
-  {updateCue, initShot, makeShot}
+  {updateCue, initShot, makeShot, newGame}
 
 root = exports ? window
 root.PoolTable = PoolTable

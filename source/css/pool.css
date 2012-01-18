@@ -1,0 +1,21 @@
+#poolscreen {
+  width: 100%;
+  position: relative;
+  float: left;
+}
+
+#poolscreen canvas {
+  float: left;
+  display: inline;
+}
+
+#poolscreen .hud {
+  width: 300px;
+  height: 400px;
+  float: left;
+}
+
+#poolscreen .hud span {
+  font-size: 22px;
+  margin-right: 60px;
+}

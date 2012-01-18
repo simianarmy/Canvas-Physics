@@ -1,3 +1,6 @@
+<% content_for(:head) do %>
+  <link href="css/pool.css" rel="stylesheet" type="text/css" media="screen" />
+<% end %>
 <div id="container">
   <header>
     <h1 class="title">Canvas: Pool</h1>
@@ -10,10 +13,14 @@
     Move mouse over canvas to position cue.<br/>
     Hold mouse down to pull cue back and release to shoot.<br/>
     Duration of mouse down will affect power of the shot.</br>
-    <canvas id="poolcanvas" width="600" height="1000"></canvas>
-    <p>
-    </p>
+    <div id="poolscreen">
+      <canvas id="poolcanvas" width="500" height="1000"></canvas>
+      <div class="hud">
+        <span id="p1">Player 1</span><span id="p2">Player 2</span>
+      </div>
+    </div>
   </div>
+  <div style="clear:both;"></div>
   <footer>
     Source: 
     <a href="docs/collisions.js.html">collisions</a>

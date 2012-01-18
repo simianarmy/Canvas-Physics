@@ -11,18 +11,13 @@ $(document).ready ->
   shotForce = 0
   shotTimerID = null
   cueStart = 0
+  currentPlayer = 1
+  winner = null
   
   # fetch and save the canvas context
   canvas = $("#poolcanvas").get(0)
   context = canvas.getContext('2d')  
-    
-  sc = PoolTable(context, {
-    width: canvas.width
-    height: canvas.height
-    tableSize: 300
-  })
-  cevents = canvasEvents(canvas)
-
+  
   incShotForce = ->
     timeNow = new Date().getTime()
     if cueStart != 0
@@ -46,6 +41,17 @@ $(document).ready ->
     clearInterval shotTimerID
     shotForce = 0
     
+  playerTurnFinished = ->
+    switchPlayer()
+    
+  switchPlayer = ->
+    currentPlayer = if currentPlayer == 1 then 2 else 1
+    updateHUD()
+    
+  updateHUD = ->
+    $('.hud span').css('background-color', 'white')
+    $('.hud #p'+currentPlayer).css('background-color', '#00DD00')
+    
   mouseMove = (evt) ->
     pnt = cevents.mouseMove(evt)
     sc.updateCue(pnt) unless shooting
@@ -60,6 +66,20 @@ $(document).ready ->
     shoot() if shooting
     shooting = false
     
+  newGame = ->
+    updateHUD()
+    sc.newGame()
+  
+  # main  
+  sc = PoolTable(context, {
+    width: canvas.width
+    height: canvas.height
+    tableSize: 300
+    onEndTurn: playerTurnFinished
+  })
+  cevents = canvasEvents(canvas)
   canvas.addEventListener('mousedown', mouseDown, false)
   canvas.addEventListener('mouseup', mouseUp, false)
   canvas.addEventListener('mousemove', mouseMove, false)
+  
+  newGame()
