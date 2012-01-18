@@ -24,23 +24,21 @@ $(document).ready ->
   cevents = canvasEvents(canvas)
 
   incShotForce = ->
-    shotForce += 1
     timeNow = new Date().getTime()
-    elapsed = 0
     if cueStart != 0
-      elapsed = timeNow - cueStart
-    
-    shoot() if elapsed/1000 >= MAX_CUE_TIME
+      shotForce = timeNow - cueStart
+      
+    shoot() if shotForce/1000 >= MAX_CUE_TIME
   
   shoot = ->
-    cueSpeed = (shotForce / MAX_CUE_TIME) * MAX_BALL_SPEED
+    cueSpeed = (shotForce / 500) * MAX_BALL_SPEED
     sc.makeShot cueSpeed
     endShot()
     
   startShot = ->
     shotForce = 0
     cueStart = new Date().getTime()
-    shotTimerID = setInterval(incShotForce, 200)
+    shotTimerID = setInterval(incShotForce, 100)
     shooting = true
     
   endShot = ->

@@ -49,6 +49,7 @@ PoolTable = (ctxt, opts) ->
   ticks = 0
   lastTime = 0
   animating = false
+  eightBallIdx = -1
   
   # setup
   setup = ->
@@ -164,7 +165,15 @@ PoolTable = (ctxt, opts) ->
         moving: false
         number: i
         }) 
-  
+    
+    # Save original positions for replay
+    for b in balls
+      b.origPos = b.pos.dup()
+    
+    # Save eight ball array index for optimization
+    for i in in [0...NUM_BALLS]
+      eightBallIdx = i if balls[i].number == 8
+      
   createCue = ->
     cueImg = new Image
     cueImg.src = '/img/poolcue.png'
@@ -278,18 +287,17 @@ PoolTable = (ctxt, opts) ->
   # @param {Shape} s - object to move
   # @param {Number} ts - timestep
   moveObject = (s, ts) ->
-    disp = displacement(ts, s.velocity)
-    #console.log "Moving #{s.number} by #{disp.inspect()}"
-    s.move disp
+    s.move displacement(ts, s.velocity)
   
   ballIsMoving = (b) ->
     b.speed > Sylvester.precision
     
   ballsMoving = ->
-    for b in balls
-      return true if ballIsMoving(b)
-    false      
+    (b for b in balls when ballIsMoving(b)).length
 
+  ballsInPlay = ->
+    (b for b in balls[1..NUM_BALLS] when !b.pocketed).length
+    
   applyFrictionToBalls = (balls) ->
     for b in balls when b.moving
       # slow ball speed from friction
@@ -305,13 +313,25 @@ PoolTable = (ctxt, opts) ->
   cueBall = ->
     balls[0]
 
+  eightBall = ->
+    balls[eightBallIdx]
+
   isScratched = ->
     cueBall().pocketed
   
+  isEightBallScratched = ->
+    # TODO: Take current player's color into consideration
+    eightBall().pocketed and ballsInPlay() > 1
+    
   resetCueBall = ->
     b = cueBall()
     b.pocketed = false
     b.pos = cuestartPos()
+      
+  newGame = ->
+    for b in balls
+      b.pos = b.origPos.dup()
+      b.pocketed = false
       
   # Pool game specific collision detection
   # @param {Number} timestep since last call  
@@ -376,9 +396,8 @@ PoolTable = (ctxt, opts) ->
         
           # check for ball pocketing
           for p in pockets
-            if detectCollisionHelper(b1, p, "pocket") != null
-              console.log "pocket collision detected"
-            
+            detectCollisionHelper(b1, p, "pocket")
+              
       # if there is no collision we are finished
       break if mn == 2
       
@@ -431,6 +450,7 @@ PoolTable = (ctxt, opts) ->
     unless ballsMoving()
       drawCue() 
       resetCueBall() if isScratched()
+      newGame() if isEightBallScratched()
     
   # animate all objects
   animate = ->
