@@ -479,6 +479,8 @@ PoolTable = (ctxt, opts) ->
         removePocketed ob1
       else
         #console.log "resolving collision b/w #{ob1.number} & #{ob2.number}"
+        ob1.collided = true
+        ob1.collisionSpeed = ob1.velocity.subtract(ob2.velocity).mag()
         collisions.resolveCollision ob1, ob2, n
         ob1.speed = ob1.velocity.mag()
         ob2.speed = ob2.velocity.mag()
@@ -488,7 +490,7 @@ PoolTable = (ctxt, opts) ->
         if ob2.moving = ballIsMoving(ob2)
           #console.log "ball #{ob2.number} speed: #{ob2.speed} velocity: #{ob2.velocity.inspect()}"
           ob2.direction = ob2.velocity.toUnitVector()
-        ob1.collided = true
+        
           
       # decrease time and repeat
       ts *= (1 - mn)
@@ -499,7 +501,7 @@ PoolTable = (ctxt, opts) ->
       moveObject(b, ts) if b.moving
       # Use callbacks if any
       if b.collided
-        onCollisionCb() if onCollisionCb?
+        onCollisionCb(b.collisionSpeed) if onCollisionCb?
         b.collided = false
     
   # toggle the animation on and off

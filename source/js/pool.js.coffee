@@ -60,7 +60,10 @@ $(document).ready ->
     else
       switchPlayer()
     
-  onCollision = ->
+  onCollision = (collisionSpeed) ->
+    volume = Math.min(collisionSpeed / MAX_BALL_SPEED, 1)
+    console.log "playing collision audio volume #{volume}"
+    collisionSound.volume = volume
     collisionSound.play()
     
   switchPlayer = ->
