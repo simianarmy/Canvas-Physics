@@ -11,12 +11,12 @@
 
 #poolscreen .hud {
   margin-top: 100px;
-  width: 500px;
-  height: 400px;
+  width: 320px;
+  height: 200px;
   float: left;
 }
 
 #poolscreen .hud span {
   font-size: 22px;
-  margin-right: 60px;
+  margin-right: 30px;
 }

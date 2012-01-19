@@ -49,12 +49,20 @@ $(document).ready ->
       op = sc.otherPlayer(currentPlayer)
       player2Color = playerInfo[op]
       $('.hud #p'+op).append('&nbsp;&nbsp'+playerInfo[op]+'s')
-      
-    switchPlayer()
+    
+    if sc.isGameOver()
+      endGame sc.getWinner()
+    else
+      switchPlayer()
     
   switchPlayer = ->
     currentPlayer = if currentPlayer == 1 then 2 else 1
     updateHUD()
+    
+  resetHUD = ->
+    $('.hud #p1').html('Player 1')
+    $('.hud #p2').html('Player 2')
+    $('.hud span').css('background-color', 'white')
     
   updateHUD = ->
     $('.hud span').css('background-color', 'white')
@@ -75,9 +83,18 @@ $(document).ready ->
     shooting = false
     
   newGame = ->
+    currentPlayer = 1
+    player1Color = player2Color = null
+    winner = null
+    resetHUD()
     updateHUD()
     sc.newGame()
+    $('#newgame').hide()
   
+  endGame = (winner) ->
+    $('.hud #p'+winner).append('&nbsp; ** WINNER')
+    $('#newgame').show()
+    
   # main  
   sc = PoolTable(context, {
     width: canvas.width
@@ -89,5 +106,6 @@ $(document).ready ->
   canvas.addEventListener('mousedown', mouseDown, false)
   canvas.addEventListener('mouseup', mouseUp, false)
   canvas.addEventListener('mousemove', mouseMove, false)
+  $('#newgame a').click newGame
   
   newGame()

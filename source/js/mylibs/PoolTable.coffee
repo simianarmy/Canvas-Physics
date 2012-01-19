@@ -305,9 +305,17 @@ PoolTable = (ctxt, opts) ->
   ballsMoving = ->
     (b for b in balls when ballIsMoving(b)).length
 
-  ballsInPlay = ->
-    (b for b in balls[1..NUM_BALLS] when !b.pocketed).length
-    
+  # returns # non-pocketed balls belonging to a player
+  numBallsInPlay = (player) ->
+    (b for b in playerBalls(player) when !b.pocketed and (b != eightBall())).length
+
+  # returns all balls belonging to player
+  playerBalls = (player) -> 
+    if playerColors[currentPlayer]
+      (b for b in balls when ballColor(b) == playerColors[currentPlayer] and b != eightBall())
+    else # return all balls if no one has sunk a ball yet
+      balls[1..NUM_BALLS]
+      
   applyFrictionToBalls = (balls) ->
     for b in balls when b.moving
       # slow ball speed from friction
@@ -324,6 +332,8 @@ PoolTable = (ctxt, opts) ->
     if isColorBall(ball)
       # if first pocketed ball, we need to set the player side
       unless playerColors[currentPlayer]
+        # TODO: When more than one color pocketed, 
+        # give player choice or use color with highest count
         playerColors[currentPlayer] = ballColor(ball)
         playerColors[otherPlayer(currentPlayer)] = otherColor(ball)
         console.dir playerColors
@@ -348,7 +358,7 @@ PoolTable = (ctxt, opts) ->
   
   isEightBallScratched = ->
     # TODO: Take current player's color into consideration
-    eightBall().pocketed and (ballsInPlay() > 1)
+    eightBall().pocketed and (numBallsInPlay(currentPlayer) > 0)
     
   isOwnBallPocketed = ->
     pocketedOnTurn.length > 0 and
@@ -357,6 +367,21 @@ PoolTable = (ctxt, opts) ->
     
   isColorBall = (ball) ->
     ball != cueBall() && ball != eightBall()
+  
+  isGameOver = ->
+    eightBall().pocketed or 
+      (isScratched() and (numBallsInPlay(currentPlayer) == 0))
+  
+  isEndOfTurn = ->
+    return false unless shooting
+    isScratched() or !isOwnBallPocketed() or eightBall().pocketed
+  
+  # Determines which player won iff game is over
+  getWinner = ->
+    if (numBallsInPlay(currentPlayer) == 0) and !isScratched()
+      currentPlayer
+    else 
+      otherPlayer(currentPlayer)
     
   resetCueBall = ->
     b = cueBall()
@@ -486,14 +511,8 @@ PoolTable = (ctxt, opts) ->
     drawBalls()
     unless ballsMoving()
       drawCue() 
-      resetCueBall() if isScratched()
-      newGame() if isEightBallScratched()
-      # handle end of turn
-      if shooting
-        shooting = false
-        unless isOwnBallPocketed()
-          onEndTurnCb(playerColors) if onEndTurnCb?
-    
+      shotFinished() if shooting
+  
   # animate all objects
   animate = ->
     # Pass latest timestep to the collision detection function
@@ -539,9 +558,21 @@ PoolTable = (ctxt, opts) ->
     balls[0].direction = cueVec.dup()
     balls[0].speed = cueSpeed
     balls[0].moving = true
-    
+  
+  shotFinished = ->
+    # handle end of turn
+    if isEndOfTurn()  
+      # use callback if one was provided
+      if onEndTurnCb?
+        onEndTurnCb(playerColors) 
+      else if isGameOver()
+        newGame()
+        
+    resetCueBall() if isScratched()
+    shooting = false
+      
   # Return public functions
-  {updateCue, initShot, makeShot, newGame, otherPlayer}
+  {updateCue, initShot, makeShot, newGame, isGameOver, otherPlayer, getWinner}
 
 root = exports ? window
 root.PoolTable = PoolTable
