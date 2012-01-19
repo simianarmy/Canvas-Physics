@@ -12,6 +12,7 @@ $(document).ready ->
   shotTimerID = null
   cueStart = 0
   currentPlayer = 1
+  player1Color = player2Color = null
   winner = null
   
   # fetch and save the canvas context
@@ -27,7 +28,7 @@ $(document).ready ->
   
   shoot = ->
     cueSpeed = (shotForce / 500) * MAX_BALL_SPEED
-    sc.makeShot cueSpeed
+    sc.makeShot currentPlayer, cueSpeed
     endShot()
     
   startShot = ->
@@ -41,7 +42,14 @@ $(document).ready ->
     clearInterval shotTimerID
     shotForce = 0
     
-  playerTurnFinished = ->
+  playerTurnFinished = (playerInfo) ->
+    if !player1Color && playerInfo[currentPlayer]
+      player1Color = playerInfo[currentPlayer]
+      $('.hud #p'+currentPlayer).append('&nbsp;&nbsp'+player1Color+'s')
+      op = sc.otherPlayer(currentPlayer)
+      player2Color = playerInfo[op]
+      $('.hud #p'+op).append('&nbsp;&nbsp'+playerInfo[op]+'s')
+      
     switchPlayer()
     
   switchPlayer = ->

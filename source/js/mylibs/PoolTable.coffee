@@ -5,10 +5,10 @@
 #= require ./Line
 #= require ./Circle
 
-DRAW_GUIDES         = false
+DRAW_GUIDES         = true
 NUM_BALLS           = 16
 BALL_RADIUS         = 10
-POCKET_SIZE         = 1.7
+POCKET_SIZE         = 1.8
 JAW_SIZE            = 1.4
 DECELARATION        = .9
 CUSHION_EFFICIENCY  = 0.7
@@ -52,8 +52,10 @@ PoolTable = (ctxt, opts) ->
   lastTime = 0
   animating = false
   # turn based state vars
-  shooting = false
-  pocketedOnTurn = []
+  shooting            = false
+  pocketedOnTurn      = []
+  playerColors        = {}
+  currentPlayer       = null
   
   # setup
   setup = ->
@@ -160,7 +162,7 @@ PoolTable = (ctxt, opts) ->
         when 16 then tristart.add $V([0, 2*y, 0])
       
     for i in [1..NUM_BALLS]
-      p = ballPosition(i)
+      p = ballPosition(i).add(point(0.4, 0.4))
       balls.push new Circle(p.e(1), p.e(2), p.e(3), {
         radius: ballRadius
         color: BALL_COLORS[i-1]        
@@ -319,6 +321,22 @@ PoolTable = (ctxt, opts) ->
     ball.pos = Vector.Zero(3)
     pocketedOnTurn.push ball
     
+    if isColorBall(ball)
+      # if first pocketed ball, we need to set the player side
+      unless playerColors[currentPlayer]
+        playerColors[currentPlayer] = ballColor(ball)
+        playerColors[otherPlayer(currentPlayer)] = otherColor(ball)
+        console.dir playerColors
+    
+  otherPlayer = (player) ->
+    (player % 2) + 1
+    
+  ballColor = (ball) ->
+    if ball.number < 8 then 'solid' else 'stripe'
+    
+  otherColor = (ball) ->
+    if ballColor(ball) == 'solid' then 'stripe' else 'solid'
+    
   cueBall = ->
     balls[0]
 
@@ -333,7 +351,12 @@ PoolTable = (ctxt, opts) ->
     eightBall().pocketed and (ballsInPlay() > 1)
     
   isOwnBallPocketed = ->
-    pocketedOnTurn.length > 0
+    pocketedOnTurn.length > 0 and
+      # last pocketed should be player color
+      ballColor(pocketedOnTurn[pocketedOnTurn.length-1]) == playerColors[currentPlayer]
+    
+  isColorBall = (ball) ->
+    ball != cueBall() && ball != eightBall()
     
   resetCueBall = ->
     b = cueBall()
@@ -341,6 +364,8 @@ PoolTable = (ctxt, opts) ->
     b.pos = cuestartPos()
       
   newGame = ->
+    playerColors = {}
+    
     for b in balls
       b.pos = b.origPos.dup()
       b.pocketed = false
@@ -467,7 +492,7 @@ PoolTable = (ctxt, opts) ->
       if shooting
         shooting = false
         unless isOwnBallPocketed()
-          onEndTurnCb.call(this) if onEndTurnCb
+          onEndTurnCb(playerColors) if onEndTurnCb?
     
   # animate all objects
   animate = ->
@@ -504,17 +529,19 @@ PoolTable = (ctxt, opts) ->
     cueing = true
     
   # Shoot!
-  makeShot = (cueSpeed) ->
-    console.log "Shooting with speed: #{cueSpeed} and dir #{cueVec.inspect()}"
+  makeShot = (player, cueSpeed) ->
+    console.debug "player #{player} shooting with speed: #{cueSpeed} and dir #{cueVec.inspect()}"
     cueing = false
     shooting = true
+    currentPlayer = player
+    pocketedOnTurn = []
+    
     balls[0].direction = cueVec.dup()
     balls[0].speed = cueSpeed
     balls[0].moving = true
-    pocketedOnTurn = []
     
   # Return public functions
-  {updateCue, initShot, makeShot, newGame}
+  {updateCue, initShot, makeShot, newGame, otherPlayer}
 
 root = exports ? window
 root.PoolTable = PoolTable
