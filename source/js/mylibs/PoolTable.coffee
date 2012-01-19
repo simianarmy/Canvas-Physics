@@ -31,6 +31,7 @@ PoolTable = (ctxt, opts) ->
   frictionDecelaration = opts.decelaration ? DECELARATION
   cushionEfficiency = opts.efficiency ? CUSHION_EFFICIENCY
   onEndTurnCb       = opts.onEndTurn
+  onCollisionCb     = opts.onCollision
   cueImg    = null
   cuePos    = null
   cueRot    = 0
@@ -298,7 +299,7 @@ PoolTable = (ctxt, opts) ->
   # @param {Number} ts - timestep
   moveObject = (s, ts) ->
     s.move displacement(ts, s.velocity)
-  
+      
   ballIsMoving = (b) ->
     b.speed > Sylvester.precision
     
@@ -434,7 +435,6 @@ PoolTable = (ctxt, opts) ->
           n = collisionNormal.dup()
           ob1 = s1
           ob2 = s2
-          s1.collided = s2.collided = true
           tp = objType
         
         collisionTime
@@ -442,7 +442,7 @@ PoolTable = (ctxt, opts) ->
       # Check each ball for collision
       for i in [0...balls.length]
         b1 = balls[i]
-
+        
         # check for collisions between balls
         for j in [(i+1)...balls.length]
           b2 = balls[j]
@@ -488,14 +488,19 @@ PoolTable = (ctxt, opts) ->
         if ob2.moving = ballIsMoving(ob2)
           #console.log "ball #{ob2.number} speed: #{ob2.speed} velocity: #{ob2.velocity.inspect()}"
           ob2.direction = ob2.velocity.toUnitVector()
+        ob1.collided = true
           
       # decrease time and repeat
       ts *= (1 - mn)
     # End while ts > 0
     
     # move balls for the last section (no collisions)
-    for b in balls when b.moving
-      moveObject(b, ts)
+    for b in balls
+      moveObject(b, ts) if b.moving
+      # Use callbacks if any
+      if b.collided
+        onCollisionCb() if onCollisionCb?
+        b.collided = false
     
   # toggle the animation on and off
   toggleAnimation = ->

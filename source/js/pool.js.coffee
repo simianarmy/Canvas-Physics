@@ -14,11 +14,16 @@ $(document).ready ->
   currentPlayer = 1
   player1Color = player2Color = null
   winner = null
+  collisionSound = null
   
   # fetch and save the canvas context
   canvas = $("#poolcanvas").get(0)
   context = canvas.getContext('2d')  
   
+  loadAudio = ->
+    collisionSound = $('#ballcollisionSound')[0]
+    newGame()
+    
   incShotForce = ->
     timeNow = new Date().getTime()
     if cueStart != 0
@@ -41,7 +46,7 @@ $(document).ready ->
     shooting = false
     clearInterval shotTimerID
     shotForce = 0
-    
+  
   playerTurnFinished = (playerInfo) ->
     if !player1Color && playerInfo[currentPlayer]
       player1Color = playerInfo[currentPlayer]
@@ -54,6 +59,9 @@ $(document).ready ->
       endGame sc.getWinner()
     else
       switchPlayer()
+    
+  onCollision = ->
+    collisionSound.play()
     
   switchPlayer = ->
     currentPlayer = if currentPlayer == 1 then 2 else 1
@@ -96,16 +104,20 @@ $(document).ready ->
     $('#newgame').show()
     
   # main  
+  # Create main pool table physics object
   sc = PoolTable(context, {
     width: canvas.width
     height: canvas.height
     tableSize: 300
+    onCollision: onCollision
     onEndTurn: playerTurnFinished
   })
+  # Load sounds
+  loadAudio()
+  
   cevents = canvasEvents(canvas)
   canvas.addEventListener('mousedown', mouseDown, false)
   canvas.addEventListener('mouseup', mouseUp, false)
   canvas.addEventListener('mousemove', mouseMove, false)
   $('#newgame a').click newGame
   
-  newGame()
