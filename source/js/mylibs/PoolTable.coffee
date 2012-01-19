@@ -238,12 +238,12 @@ PoolTable = (ctxt, opts) ->
     context.fillRect(voff.e(1), voff.e(2), tableSize, tableSize * 2)
     
     # Draw the pocket corners
-    if DRAW_GUIDES
-      pt = $V([jawArcRadius, jawArcRadius, 0])
-      context.save()
-      context.strokeStyle = 'grey'
-      for j in jaws
-        drawJaw(j)
+    # if DRAW_GUIDES
+    #       pt = $V([jawArcRadius, jawArcRadius, 0])
+    #       context.save()
+    #       context.strokeStyle = 'grey'
+    #       for j in jaws
+    #         drawJaw(j)
       
   drawBalls = ->
     for ball in balls when not ball.pocketed
