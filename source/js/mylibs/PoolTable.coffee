@@ -8,7 +8,7 @@
 DRAW_GUIDES         = true
 NUM_BALLS           = 16
 BALL_RADIUS         = 10
-POCKET_SIZE         = 1.2
+POCKET_SIZE         = 1.02
 JAW_SIZE            = 1.4
 DECELARATION        = .9
 CUSHION_EFFICIENCY  = 0.7
@@ -39,7 +39,7 @@ PoolTable = (ctxt, opts) ->
   lastCuePos = null
   cueLen = 0
   cueVec          = Vector.Zero(3)
-  cueCenterOffset = 0
+  cueCenterOffset = Vector.Zero(2)
   cueStartTime = 0
   cueing    = false
   balls     = []
@@ -86,13 +86,13 @@ PoolTable = (ctxt, opts) ->
       wall.pos = wall.pos.add(voff)
     
     # pw is the radius of the circular arcs at the pocket entrances
-    pw = ballRadius * 1.02 / 2
+    pw = ballRadius * pocketSize / 2
 
     createPocket = (v) ->
       new Circle(v.e(1), v.e(2), 0, {radius: ballRadius * pocketSize, mass: Infinity, speed: 0})
       
     createJaw = (v, orientation) ->
-      new Circle(v.e(1), v.e(2), 0, {radius: ballRadius, mass: Infinity, speed: 0})
+      new Circle(v.e(1), v.e(2), 0, {radius: ballRadius / 2, mass: Infinity, speed: 0})
      
     # Use walls as guide to create jaws
     for wall in cushions
@@ -222,7 +222,6 @@ PoolTable = (ctxt, opts) ->
   drawPocket = (j, offset=0) ->
     context.beginPath()
     context.arc(j.x()-offset, j.y()+offset, j.radius, 0, Math.PI*2, false)
-    #drawEllipse(j, j.width, j.height)
     context.fill()
     context.closePath()
     
@@ -232,29 +231,60 @@ PoolTable = (ctxt, opts) ->
     context.fillStyle = '#FFFFFF'
     context.fillRect 0, 0, cw, ch
     
-    context.strokeStyle = 'brown'
+    context.fillStyle = 'brown'
     cushionWidth = 20
     # Draw boundary walls
     context.fillRect(voff.e(1)-cushionWidth, voff.e(2)-cushionWidth, 
       tableSize+cushionWidth*2, tableSize*2+cushionWidth*2)
     
-    # Draw cushions
-    for wall in cushions
-      drawLine(wall)
-    
+    # Draw corner rectangles
+    context.fillStyle = 'black'
+    cornerw = cushionWidth + ballRadius * Math.sqrt(2.0) * pocketSize
+    # top left
+    context.fillRect(voff.e(1)-cushionWidth, voff.e(2)-cushionWidth,
+      cornerw, cornerw)
+    # top right
+    context.fillRect(voff.e(1)+tableSize+cushionWidth-cornerw, 
+      voff.e(2)-cushionWidth, 
+      cornerw, cornerw)
+    # bottom left
+    context.fillRect(voff.e(1)-cushionWidth, 
+      voff.e(2)+tableSize*2+cushionWidth-cornerw,
+      cornerw, cornerw)
+    # bottom right
+    context.fillRect(voff.e(1)+tableSize+cushionWidth-cornerw,
+      voff.e(2)+tableSize*2+cushionWidth-cornerw,
+      cornerw, cornerw)
+      
+    # Draw felt
     context.fillStyle = "#00aa00"
     context.fillRect(voff.e(1), voff.e(2), tableSize, tableSize * 2)
     
-    # Draw the pocket corners
-    context.fillStyle = 'black'
+    # Draw the pocket jaws
+    context.fillStyle = 'brown'
     r = ballRadius * 1.02
-    
-    arcoff = r/2
+    arcoff = 0
+    #arcoff = r/2
     drawPocket(j, arcoff) for j in jaws
       
     # Draw the pockets
-    arcoff = r
-    drawPocket(j, arcoff) for p in pockets
+    context.fillStyle = 'black'
+    #arcoff = r
+    drawPocket(p, arcoff) for p in pockets
+    
+    # fill in side pocket rectangles
+    # side left
+    context.fillRect(voff.e(1)-cushionWidth, 
+      tableSize+yoffset-pockets[0].radius-jaws[0].radius/2,
+      cushionWidth, 
+      pockets[0].radius*2+jaws[0].radius
+      )
+    # side right
+    context.fillRect(voff.e(1)+tableSize+cushionWidth-cushionWidth
+      tableSize+yoffset-pockets[0].radius-jaws[0].radius/2,
+      cushionWidth, 
+      pockets[0].radius*2+jaws[0].radius
+      )
     
     context.restore()
     
@@ -271,7 +301,7 @@ PoolTable = (ctxt, opts) ->
     # Wait until cue image fully loaded
     return unless lastCuePos? and cueImg.width > 0 and cueImg.height > 0
     # Cue start point relative to ball
-    ogCuePos = point(-(cueImg.width-ballRadius/1.5)+cueCenterOffset, -(cueImg.height+ballRadius/1.5))
+    ogCuePos = point(-(cueImg.width-ballRadius/1.5)+cueCenterOffset.e(1), -(cueImg.height+ballRadius/1.5))
         
     #context.fillText "cue angle: #{cueRotDegrees}", 0, 20
     if cueing
@@ -305,7 +335,15 @@ PoolTable = (ctxt, opts) ->
       foo = 0
       throw "wtf?" 
     vel.x(ts / 1000.0)
-        
+      
+  # Cue ball angular velocity (horizontal english)
+  cueAngularVelocity = ->
+    cueCenterOffset.e(1) / 25 * 2 * Math.PI
+    
+  # Cue ball topsin (vertical english)
+  cueTopspin = ->
+    cueCenterOffset.e(2)
+    
   # Moves some shape for some timestep
   #
   # @param {Shape} s - object to move
@@ -396,6 +434,10 @@ PoolTable = (ctxt, opts) ->
       currentPlayer
     else 
       otherPlayer(currentPlayer)
+    
+  # Returns english applied to cue in both axes
+  getEnglish = ->
+    {horizontal: cueAngularVelocity(), vertical: cueTopspin()}
     
   resetCueBall = ->
     b = cueBall()
@@ -586,7 +628,12 @@ PoolTable = (ctxt, opts) ->
   
   # Moves cue left/right from center
   moveCue = (dir) ->
-    cueCenterOffset += if dir == 'l' then 1 else -1
+    v = cueCenterOffset.elements
+    switch dir
+      when 'l' then v[0] -= 1
+      when 'r' then v[0] += 1
+      when 'u' then v[1] += 1
+      when 'd' then v[1] -= 1
   
   # Making the shot
   initShot = ->
@@ -606,8 +653,8 @@ PoolTable = (ctxt, opts) ->
     c.direction = cueVec.dup()
     c.speed = cueSpeed
     c.moving = true
-    c.angVel = cueCenterOffset/25 * 2 * Math.PI
-    cueCenterOffset = 0
+    c.angVel = cueAngularVelocity()
+    cueCenterOffset = Vector.Zero(2)
     console.debug "player #{player} shooting with speed: #{cueSpeed}, dir #{cueVec.inspect()}, english: #{c.angVel}"
   
   shotFinished = ->
@@ -623,7 +670,7 @@ PoolTable = (ctxt, opts) ->
     shooting = false
       
   # Return public functions
-  {updateCue, moveCue, initShot, makeShot, newGame, isGameOver, otherPlayer, getWinner}
+  {updateCue, moveCue, initShot, makeShot, newGame, isGameOver, otherPlayer, getWinner, getEnglish}
 
 root = exports ? window
 root.PoolTable = PoolTable

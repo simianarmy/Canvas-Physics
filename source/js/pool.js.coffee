@@ -32,9 +32,15 @@ $(document).ready ->
       
     shoot() if shotForce/1000 >= MAX_CUE_TIME
   
+  roundDecimal = (num) ->
+    Math.round(num*100)/100
+    
   shoot = ->
     clearInterval shotTimerID
     cueSpeed = (shotForce / 500) * MAX_BALL_SPEED
+    eng = sc.getEnglish()
+    $('#force').html(cueSpeed)
+    $('#english').html("Horizontal: #{roundDecimal(eng.horizontal)}<br/>Vertical: #{roundDecimal(eng.vertical)}")
     sc.makeShot currentPlayer, cueSpeed
     endShot()
     
@@ -76,36 +82,50 @@ $(document).ready ->
     $('.hud #p2').html('Player 2')
     $('.hud span').css('background-color', 'white')
     
-  updateHUD = ->
+  updateHUD = (player=currentPlayer)->
     $('.hud span').css('background-color', 'white')
-    $('.hud #p'+currentPlayer).css('background-color', '#00DD00')
+    $('.hud #p'+player).css('background-color', '#00DD00')
     
   mouseMove = (evt) ->
+    evt.stopPropagation()
     pnt = cevents.mouseMove(evt)
     sc.updateCue(pnt) unless shooting
       
   mouseDown = (evt) ->
+    evt.stopPropagation()
     pnt = cevents.mouseDown(evt)
     unless shooting
       sc.initShot pnt
       startShot()
 
   mouseUp = (evt) ->
+    evt.stopPropagation()
     shoot() if shooting
     shooting = false
   
+  # prevent arrow keys from scrolling around
+  keyDown = (evt) ->
+    if [37..40].indexOf(evt.keyCode) > 0
+      evt.preventDefault()
+      
   keyUp = (evt) ->
     console.log "on key up #{evt.keyCode}"
+    evt.stopPropagation()
     return false if shooting
     dir = null
+    
     switch evt.keyCode
       when 37, 65
         dir = 'l'
       when 39, 68
         dir = 'r'
+      when 38, 87
+        dir = 'u'
+      when 40, 83
+        dir = 'd'
     
     sc.moveCue(dir) if dir?
-
+    
   newGame = ->
     currentPlayer = 1
     player1Color = player2Color = null
@@ -117,6 +137,7 @@ $(document).ready ->
   
   endGame = (winner) ->
     $('.hud #p'+winner).append('&nbsp; ** WINNER')
+    updateHUD(winner)
     $('#newgame').show()
     
   # main  
@@ -135,6 +156,7 @@ $(document).ready ->
   canvas.addEventListener('mousedown', mouseDown, false)
   canvas.addEventListener('mouseup', mouseUp, false)
   canvas.addEventListener('mousemove', mouseMove, false)
+  $(document).keydown(keyDown)
   $(document).keyup(keyUp)
   
   $('#newgame a').click newGame
