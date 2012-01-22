@@ -8,7 +8,7 @@
 DRAW_GUIDES         = true
 NUM_BALLS           = 16
 BALL_RADIUS         = 10
-POCKET_SIZE         = 1.8
+POCKET_SIZE         = 1.2
 JAW_SIZE            = 1.4
 DECELARATION        = .9
 CUSHION_EFFICIENCY  = 0.7
@@ -45,6 +45,8 @@ PoolTable = (ctxt, opts) ->
   balls     = []
   cushions  = []
   jaws      = []
+  pockets   = []
+  allpockets = []
   
   jawArcRadius = 0
   xoffset   = cw / 4
@@ -63,7 +65,7 @@ PoolTable = (ctxt, opts) ->
   setup = ->
     console.log "setting up game objects"
     rs = ballRadius * pocketSize
-    rd = ballRadius * Math.sqrt(2.0) * pocketSize
+    rd = ballRadius * Math.sqrt(2.0) * pocketSize # side separation of a corner pocket
     
     console.debug "Table size: #{tableSize}\nball radius: #{ballRadius}\npocket size: #{pocketSize}\njaw size: #{jawSize}"
     console.debug "rs: #{rs}, rd: #{rd}"
@@ -84,21 +86,13 @@ PoolTable = (ctxt, opts) ->
       wall.pos = wall.pos.add(voff)
     
     # pw is the radius of the circular arcs at the pocket entrances
-    jawArcRadius = pw = ballRadius * jawSize
-    
+    pw = ballRadius * 1.02 / 2
+
     createPocket = (v) ->
-      new Circle(v.e(1), v.e(2), 0, {radius: ballRadius, mass: Infinity, speed: 0})
+      new Circle(v.e(1), v.e(2), 0, {radius: ballRadius * pocketSize, mass: Infinity, speed: 0})
       
     createJaw = (v, orientation) ->
-      p = new Circle(v.e(1), v.e(2), 0, {radius: jawArcRadius, mass: Infinity, speed: 0})
-      # code below is for drawing jaws as ellipses.  not currently used
-      if orientation == 'v'
-        p.width = pw
-        p.height = pw*4
-      else
-        p.width = pw*4
-        p.height = pw
-      p
+      new Circle(v.e(1), v.e(2), 0, {radius: ballRadius, mass: Infinity, speed: 0})
      
     # Use walls as guide to create jaws
     for wall in cushions
@@ -121,13 +115,16 @@ PoolTable = (ctxt, opts) ->
     xx = voff.e(1) + tableSize
     sideOffset = ballRadius * 2/3
     b = 2
-    jaws.push createPocket(point(xoffset-b, yoffset-b)) # left top
-    jaws.push createPocket(point(xx+b, yoffset-b)) # right top
-    jaws.push createPocket(point(xoffset-sideOffset, tableSize+yoffset))  #m middle left
-    jaws.push createPocket(point(xx+sideOffset, tableSize+yoffset)) # middle right
-    jaws.push createPocket(point(xoffset-b, yoffset+b+tableSize*2)) # left bottom
-    jaws.push createPocket(point(xx+b, yoffset+b+tableSize*2)) # right bottom
+    pockets.push createPocket(point(xoffset-b, yoffset-b)) # left top
+    pockets.push createPocket(point(xx+b, yoffset-b)) # right top
+    pockets.push createPocket(point(xoffset-sideOffset, tableSize+yoffset))  #m middle left
+    pockets.push createPocket(point(xx+sideOffset, tableSize+yoffset)) # middle right
+    pockets.push createPocket(point(xoffset-b, yoffset+b+tableSize*2)) # left bottom
+    pockets.push createPocket(point(xx+b, yoffset+b+tableSize*2)) # right bottom
 
+    # Save copy of all pocket shapes for collision detection function
+    allpockets = jaws.concat pockets
+    
     # Make balls
     createBalls()
     # Make pool cue
@@ -222,32 +219,45 @@ PoolTable = (ctxt, opts) ->
     context.textBaseline = 'top'
     context.fillText b.number, b.x()-5, b.y()-5
       
-  drawJaw = (j) ->
+  drawPocket = (j, offset=0) ->
     context.beginPath()
-    context.arc(j.x(), j.y(), j.radius, 0, Math.PI*2, false)
+    context.arc(j.x()-offset, j.y()+offset, j.radius, 0, Math.PI*2, false)
     #drawEllipse(j, j.width, j.height)
-    context.stroke()
+    context.fill()
     context.closePath()
     
   drawTable = ->
     # Draw the cushions
     context.save()
-    context.strokeStyle = 'black'
+    context.fillStyle = '#FFFFFF'
+    context.fillRect 0, 0, cw, ch
+    
+    context.strokeStyle = 'brown'
+    cushionWidth = 20
+    # Draw boundary walls
+    context.fillRect(voff.e(1)-cushionWidth, voff.e(2)-cushionWidth, 
+      tableSize+cushionWidth*2, tableSize*2+cushionWidth*2)
+    
+    # Draw cushions
     for wall in cushions
       drawLine(wall)
-    context.restore()
     
     context.fillStyle = "#00aa00"
     context.fillRect(voff.e(1), voff.e(2), tableSize, tableSize * 2)
     
     # Draw the pocket corners
-    # if DRAW_GUIDES
-    #       pt = $V([jawArcRadius, jawArcRadius, 0])
-    #       context.save()
-    #       context.strokeStyle = 'grey'
-    #       for j in jaws
-    #         drawJaw(j)
+    context.fillStyle = 'black'
+    r = ballRadius * 1.02
+    
+    arcoff = r/2
+    drawPocket(j, arcoff) for j in jaws
       
+    # Draw the pockets
+    arcoff = r
+    drawPocket(j, arcoff) for p in pockets
+    
+    context.restore()
+    
   drawBalls = ->
     for ball in balls when not ball.pocketed
       context.fillStyle = ball.color
@@ -554,7 +564,7 @@ PoolTable = (ctxt, opts) ->
     timeNow = new Date().getTime()
     if lastTime != 0
       elapsed = timeNow - lastTime
-      moveBalls(elapsed, balls, cushions, jaws)
+      moveBalls(elapsed, balls, cushions, allpockets)
         
     lastTime = timeNow
 
