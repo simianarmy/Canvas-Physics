@@ -147,7 +147,7 @@ collisions = ->
   # resolveInelasticCollisionFixed
   #
   # Sets velocity of 2 objects with equal mass after inelastic collision along normal  
-  # @params: 2 objects and normal of collision
+  # @params: 2 objects, normal of collision
   resolveInelasticCollisionFixed = (s1, s2, n) ->
     e = s1.efficiency * s2.efficiency
     un = s1.velocity.componentVector(n)

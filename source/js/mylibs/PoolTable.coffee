@@ -38,7 +38,8 @@ PoolTable = (ctxt, opts) ->
   cueRotDegrees = 0
   lastCuePos = null
   cueLen = 0
-  cueVec    = Vector.Zero()
+  cueVec          = Vector.Zero(3)
+  cueCenterOffset = 0
   cueStartTime = 0
   cueing    = false
   balls     = []
@@ -168,6 +169,8 @@ PoolTable = (ctxt, opts) ->
         radius: ballRadius
         color: BALL_COLORS[i-1]        
         speed: 0
+        angVel: 0
+        efficiency: 1
         pocketed: false
         moving: false
         number: i-1
@@ -258,7 +261,7 @@ PoolTable = (ctxt, opts) ->
     # Wait until cue image fully loaded
     return unless lastCuePos? and cueImg.width > 0 and cueImg.height > 0
     # Cue start point relative to ball
-    ogCuePos = point(-(cueImg.width-ballRadius/1.5), -(cueImg.height+ballRadius/2))
+    ogCuePos = point(-(cueImg.width-ballRadius/1.5)+cueCenterOffset, -(cueImg.height+ballRadius/1.5))
         
     #context.fillText "cue angle: #{cueRotDegrees}", 0, 20
     if cueing
@@ -395,6 +398,7 @@ PoolTable = (ctxt, opts) ->
     for b in balls
       b.pos = b.origPos.dup()
       b.pocketed = false
+      b.speed = b.angVel = 0
       
   # Pool game specific collision detection
   # @param {Number} timestep since last call  
@@ -439,13 +443,38 @@ PoolTable = (ctxt, opts) ->
         
         collisionTime
       
+      # Function for resolving ball's linear and angular velocities
+      # when colliding with a cushion
+      # @param {Circle} ball
+      # @param {Line} wall
+      # @param {Vector} normal - normal of collision
+      # @param {Number} cushion efficiency
+      # @param {Number} proportion or angular velocity lost (between 0, 1)
+      resolveBallCushionCollision = (ball, cushion, normal, prop) ->
+        # angular velocity decreases by some amount phi
+        phi = ball.angVel * prop
+        ball.angVel -= phi
+        # apply impulse to calculate resulting change in linear velocity
+        # impulse = I*phi/radius
+        # I = (ball.mass * ball.radius^2) / 4
+        # change in linear velocity = relative velocity + (I*phi/m) * tang
+        # = (ball.radius^2 * phi)/4 * tang
+        tang = normal.clockwiseNormal()
+        velchange = tang.x(0.4 * phi * ball.radius * ball.radius)
+        ball.velocity = ball.velocity.subtract(velchange)
+        # then apply perpendicular impulse as usual
+        collisions.resolveInelasticCollisionFixed(ball, cushion, normal)
+        
       # Check each ball for collision
       for i in [0...balls.length]
         b1 = balls[i]
+        continue if b1.pocketed
         
         # check for collisions between balls
         for j in [(i+1)...balls.length]
           b2 = balls[j]
+          continue if b2.pocketed
+          
           if b1.moving || b2.moving
             #console.log "detecting collision b/w balls #{b1.number}, #{b2.number}"
             detectCollisionHelper b1, b2, "ball"
@@ -471,7 +500,7 @@ PoolTable = (ctxt, opts) ->
 
       # resolve collisions
       if tp == "wall"
-        collisions.resolveInelasticCollisionFixed(ob1, ob2, n)
+        resolveBallCushionCollision ob1, ob2, n, 0.2
         ob1.speed = ob1.velocity.mag()
         ob1.direction = ob1.velocity.toUnitVector()
       else if tp == "pocket"
@@ -479,19 +508,18 @@ PoolTable = (ctxt, opts) ->
         removePocketed ob1
       else
         #console.log "resolving collision b/w #{ob1.number} & #{ob2.number}"
+        # Save collision speed for collision sound playback at proper volume
         ob1.collided = true
         ob1.collisionSpeed = ob1.velocity.subtract(ob2.velocity).mag()
+        
         collisions.resolveCollision ob1, ob2, n
         ob1.speed = ob1.velocity.mag()
         ob2.speed = ob2.velocity.mag()
         if ob1.moving = ballIsMoving(ob1)
-          #console.log "ball #{ob1.number} speed: #{ob1.speed} velocity: #{ob1.velocity.inspect()}"
           ob1.direction = ob1.velocity.toUnitVector()
         if ob2.moving = ballIsMoving(ob2)
-          #console.log "ball #{ob2.number} speed: #{ob2.speed} velocity: #{ob2.velocity.inspect()}"
           ob2.direction = ob2.velocity.toUnitVector()
         
-          
       # decrease time and repeat
       ts *= (1 - mn)
     # End while ts > 0
@@ -546,6 +574,10 @@ PoolTable = (ctxt, opts) ->
     cueRotDegrees = cueAngle(point(mousePos.x, mousePos.y))
     lastCuePos = point(mousePos.x, mousePos.y)
   
+  # Moves cue left/right from center
+  moveCue = (dir) ->
+    cueCenterOffset += if dir == 'l' then 1 else -1
+  
   # Making the shot
   initShot = ->
     console.log "Starting shot..."
@@ -556,15 +588,17 @@ PoolTable = (ctxt, opts) ->
     
   # Shoot!
   makeShot = (player, cueSpeed) ->
-    console.debug "player #{player} shooting with speed: #{cueSpeed} and dir #{cueVec.inspect()}"
     cueing = false
     shooting = true
     currentPlayer = player
     pocketedOnTurn = []
-    
-    balls[0].direction = cueVec.dup()
-    balls[0].speed = cueSpeed
-    balls[0].moving = true
+    c = cueBall()
+    c.direction = cueVec.dup()
+    c.speed = cueSpeed
+    c.moving = true
+    c.angVel = cueCenterOffset/25 * 2 * Math.PI
+    cueCenterOffset = 0
+    console.debug "player #{player} shooting with speed: #{cueSpeed}, dir #{cueVec.inspect()}, english: #{c.angVel}"
   
   shotFinished = ->
     # handle end of turn
@@ -579,7 +613,7 @@ PoolTable = (ctxt, opts) ->
     shooting = false
       
   # Return public functions
-  {updateCue, initShot, makeShot, newGame, isGameOver, otherPlayer, getWinner}
+  {updateCue, moveCue, initShot, makeShot, newGame, isGameOver, otherPlayer, getWinner}
 
 root = exports ? window
 root.PoolTable = PoolTable

@@ -17,7 +17,8 @@ $(document).ready ->
   collisionSound = null
   
   # fetch and save the canvas context
-  canvas = $("#poolcanvas").get(0)
+  $canvas = $("#poolcanvas")
+  canvas = $canvas.get(0)
   context = canvas.getContext('2d')  
   
   loadAudio = ->
@@ -32,6 +33,7 @@ $(document).ready ->
     shoot() if shotForce/1000 >= MAX_CUE_TIME
   
   shoot = ->
+    clearInterval shotTimerID
     cueSpeed = (shotForce / 500) * MAX_BALL_SPEED
     sc.makeShot currentPlayer, cueSpeed
     endShot()
@@ -44,7 +46,6 @@ $(document).ready ->
     
   endShot = ->
     shooting = false
-    clearInterval shotTimerID
     shotForce = 0
   
   playerTurnFinished = (playerInfo) ->
@@ -92,7 +93,19 @@ $(document).ready ->
   mouseUp = (evt) ->
     shoot() if shooting
     shooting = false
+  
+  keyUp = (evt) ->
+    console.log "on key up #{evt.keyCode}"
+    return false if shooting
+    dir = null
+    switch evt.keyCode
+      when 37, 65
+        dir = 'l'
+      when 39, 68
+        dir = 'r'
     
+    sc.moveCue(dir) if dir?
+
   newGame = ->
     currentPlayer = 1
     player1Color = player2Color = null
@@ -122,5 +135,7 @@ $(document).ready ->
   canvas.addEventListener('mousedown', mouseDown, false)
   canvas.addEventListener('mouseup', mouseUp, false)
   canvas.addEventListener('mousemove', mouseMove, false)
+  $(document).keyup(keyUp)
+  
   $('#newgame a').click newGame
   
