@@ -30,18 +30,18 @@ $(document).ready ->
     if cueStart != 0
       shotForce = timeNow - cueStart
       
+    updateShotData()
     shoot() if shotForce/1000 >= MAX_CUE_TIME
   
+  getCueSpeed = ->
+    cueSpeed = (shotForce / 500) * MAX_BALL_SPEED
+    
   roundDecimal = (num) ->
     Math.round(num*100)/100
     
   shoot = ->
     clearInterval shotTimerID
-    cueSpeed = (shotForce / 500) * MAX_BALL_SPEED
-    eng = sc.getEnglish()
-    $('#force').html(cueSpeed)
-    $('#english').html("Horizontal: #{roundDecimal(eng.horizontal)}<br/>Vertical: #{roundDecimal(eng.vertical)}")
-    sc.makeShot currentPlayer, cueSpeed
+    sc.makeShot currentPlayer, getCueSpeed()
     endShot()
     
   startShot = ->
@@ -86,6 +86,11 @@ $(document).ready ->
     $('.hud span').css('background-color', 'white')
     $('.hud #p'+player).css('background-color', '#00DD00')
     
+  updateShotData = ->
+    eng = sc.getEnglish()
+    $('#force').html(getCueSpeed())
+    $('#english').html("Horizontal: #{roundDecimal(eng.horizontal)}<br/>Vertical: #{roundDecimal(eng.vertical)}")
+  
   mouseMove = (evt) ->
     evt.stopPropagation()
     pnt = cevents.mouseMove(evt)
@@ -125,6 +130,7 @@ $(document).ready ->
         dir = 'd'
     
     sc.moveCue(dir) if dir?
+    updateShotData()
     
   newGame = ->
     currentPlayer = 1
