@@ -69,7 +69,7 @@ $(document).ready ->
     
   onCollision = (collisionSpeed) ->
     volume = Math.min(collisionSpeed / MAX_BALL_SPEED, 1)
-    console.log "playing collision audio volume #{volume}"
+    #console.log "playing collision audio volume #{volume}"
     collisionSound.volume = volume
     collisionSound.play()
     
@@ -88,7 +88,7 @@ $(document).ready ->
     
   updateShotData = ->
     eng = sc.getEnglish()
-    $('#force').html(getCueSpeed())
+    $('#force').html(roundDecimal(getCueSpeed()))
     $('#english').html("Horizontal: #{roundDecimal(eng.horizontal)}<br/>Vertical: #{roundDecimal(eng.vertical)}")
   
   mouseMove = (evt) ->

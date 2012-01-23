@@ -61,6 +61,23 @@ Vector::componentVector = (direction) ->
 Vector::divide = (val) ->
   @map (x) -> x / val
 
+# rotate
+# 
+# Rotates a vector by some amount of radians
+# @returns {Vector}
+Vector::rotate = (rads) ->
+  return this if rads == 0
+  x = @elements[0]
+  y = @elements[1]
+  # set l to the magnitude
+  l = @mag()
+  return this if l == 0
+  
+  newang = rads + Math.atan(y, x)
+  x1 = l * Math.cos(newang)
+  y1 = l * Math.sin(newang)
+  $V([x1, y1, 0])
+  
 # clockwiseNormal
 #
 # perpendicular vector, by convention

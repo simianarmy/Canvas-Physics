@@ -10,8 +10,9 @@ NUM_BALLS           = 16
 BALL_RADIUS         = 10
 POCKET_SIZE         = 1.02
 JAW_SIZE            = 1.4
-DECELARATION        = .9
-CUSHION_EFFICIENCY  = 0.7
+DECELARATION        = .95
+TABLE_FRICTION      = .95
+CUSHION_EFFICIENCY  = 1
 CUEING_SCALE        = 10
 BALL_COLORS         = ['white', 'yellow', 'blue', 'red', 'purple', 'orange', '#00DD00', 'maroon',
                       'yellow', 'blue', 'red', 'purple', 'orange', '#00DD00', 'maroon', 'black']
@@ -29,6 +30,7 @@ PoolTable = (ctxt, opts) ->
   pocketSize        = opts.pocketSize ? POCKET_SIZE
   jawSize           = opts.jawSize ? JAW_SIZE
   frictionDecelaration = opts.decelaration ? DECELARATION
+  kineticFriction   = opts.kineticFriction ? TABLE_FRICTION
   cushionEfficiency = opts.efficiency ? CUSHION_EFFICIENCY
   onEndTurnCb       = opts.onEndTurn
   onCollisionCb     = opts.onCollision
@@ -212,12 +214,6 @@ PoolTable = (ctxt, opts) ->
 
     context.stroke()
     context.closePath();
-
-  drawBallNumber = (b) ->
-    context.fillStyle    = '#FFFFFF'
-    context.font         = '10px Arial sans-serif'
-    context.textBaseline = 'top'
-    context.fillText b.number, b.x()-5, b.y()-5
       
   drawPocket = (j, offset=0) ->
     context.beginPath()
@@ -287,6 +283,34 @@ PoolTable = (ctxt, opts) ->
       )
     
     context.restore()
+      
+  drawBallSpot = (b) ->
+    ps = b.spotPos.add(b.spinDir).x(b.topspin / (2 * Math.PI))
+    if ps.mag() > ballRadius
+      ps = b.spotPos.x(-1)
+    ps = ps.rotate(b.angVel)
+    b.spotPos = ps.dup()
+    #newspot = b.pos.add(ps)
+    if b.angVel
+      context.rotate b.angVel
+    # context.fillStyle    = '#FFFFFF'
+    #     context.beginPath()
+    #     context.arc(newspot.e(1), newspot.e(2), b.radius/2, 0, Math.PI*2, true);
+    #     context.closePath();
+    #     context.fill();
+
+  drawBallNumber = (b) ->
+    s = point(b.radius/2, b.radius/2)
+    context.save()
+    # Show spinning ball with moving spot
+    if b.moving
+      drawBallSpot(b)
+    
+    context.fillStyle    = '#FFFFFF'
+    context.font         = '10px Arial sans-serif'
+    context.textBaseline = 'top'
+    context.fillText b.number, b.x()-s.e(1), b.y()-s.e(2)
+    context.restore()
     
   drawBalls = ->
     for ball in balls when not ball.pocketed
@@ -295,8 +319,10 @@ PoolTable = (ctxt, opts) ->
       context.arc(ball.x(), ball.y(), ball.radius, 0, Math.PI*2, true);
       context.closePath();
       context.fill();
-      drawBallNumber(ball) unless ball.number == 0 or ball.number == 15
-
+      unless ball.number == 0
+        drawBallNumber(ball)
+      # TODO: draw spin if applicable
+      
   drawCue = ->
     # Wait until cue image fully loaded
     return unless lastCuePos? and cueImg.width > 0 and cueImg.height > 0
@@ -334,7 +360,7 @@ PoolTable = (ctxt, opts) ->
     unless vel?
       foo = 0
       throw "wtf?" 
-    vel.x(ts / 1000.0)
+    vel.x ts
       
   # Cue ball angular velocity (horizontal english)
   cueAngularVelocity = ->
@@ -342,7 +368,7 @@ PoolTable = (ctxt, opts) ->
     
   # Cue ball topsin (vertical english)
   cueTopspin = ->
-    cueCenterOffset.e(2)
+    cueCenterOffset.e(2) * 4 * Math.PI
     
   # Moves some shape for some timestep
   #
@@ -368,13 +394,6 @@ PoolTable = (ctxt, opts) ->
     else # return all balls if no one has sunk a ball yet
       balls[1..NUM_BALLS]
       
-  applyFrictionToBalls = (balls) ->
-    for b in balls when b.moving
-      # slow ball speed from friction
-      b.speed = Math.max(b.speed - frictionDecelaration, 0)
-      # Adjust moving flag in case ball has stopped
-      b.moving = ballIsMoving(b)
-  
   removePocketed = (ball) ->
     ball.pocketed = true
     ball.speed = 0
@@ -450,14 +469,54 @@ PoolTable = (ctxt, opts) ->
     for b in balls
       b.pos = b.origPos.dup()
       b.pocketed = false
-      b.speed = b.angVel = 0
+      b.speed = b.angVel = b.topspin = 0
+      b.spinDir = point(0, 1)
+      b.spotPos = point(0, 0)
+      b.staticFriction = true
       
+  # Apply linear and kinetic friction to balls (with topspin)
+  applyFrictionToBalls = (balls, linearFriction, kinFriction) ->
+    for b in balls when b.moving
+      # Adjust moving flag in case ball has stopped
+      if !ballIsMoving(b) && b.staticFriction
+        b.moving = false
+      else
+        # slow ball speed from friction
+        b.speed = Math.max(b.speed - linearFriction, 0)
+        # calculate kinetic friction for balls which are not rolling with static friction
+        if !b.staticFriction
+          # x topspin = x linear speed
+          # calculate relative vel of ball against table surface
+          spinDiff = b.direction.x(b.speed).subtract(b.spinDir.x(b.topspin))
+          friction = spinDiff.mag()
+
+          # apply impulse along the line of the spin difference
+          if friction < kinFriction
+            # spin matches ball speed - switch to static friction
+            b.staticFriction = true
+            b.topspin = b.speed
+            b.spinDir = b.direction.dup()
+          else
+            J = spinDiff.x(kinFriction).divide(friction)
+            v = b.direction.x(b.speed).subtract(J)
+            b.speed = v.mag()
+            if b.speed > 0
+              b.direction = v.toUnitVector()
+
+            # decrease amount of topspin
+            if spinDiff.dot(b.spinDir) > 0
+              b.topspin += J.mag()
+            else
+              b.topspin -= J.mag()
+        else # static friction is active - match topspin to speed
+          b.topspin = b.speed
+
   # Pool game specific collision detection
   # @param {Number} timestep since last call  
   # @param {Array} moving objects  
   # @param {Array} fixed objects  
   moveBalls = (ts, balls, cushions, pockets) ->
-    applyFrictionToBalls(balls)
+    applyFrictionToBalls(balls, frictionDecelaration, kineticFriction)
     
     return "stopped" unless ballsMoving()
     ogts = ts
@@ -567,10 +626,15 @@ PoolTable = (ctxt, opts) ->
         collisions.resolveCollision ob1, ob2, n
         ob1.speed = ob1.velocity.mag()
         ob2.speed = ob2.velocity.mag()
-        if ob1.moving = ballIsMoving(ob1)
+        if ballIsMoving(ob1)
           ob1.direction = ob1.velocity.toUnitVector()
-        if ob2.moving = ballIsMoving(ob2)
+        if ballIsMoving(ob2)
           ob2.direction = ob2.velocity.toUnitVector()
+        # update ball spins
+        ob1.spinDir = ob1.direction.dup() unless ob1.moving
+        ob2.spinDir = ob2.direction.dup() unless ob2.moving
+        ob1.staticFriction = ob2.staticFriction = false
+        ob1.moving = ob2.moving = true
         
       # decrease time and repeat
       ts *= (1 - mn)
@@ -606,7 +670,7 @@ PoolTable = (ctxt, opts) ->
     timeNow = new Date().getTime()
     if lastTime != 0
       elapsed = timeNow - lastTime
-      moveBalls(elapsed, balls, cushions, allpockets)
+      moveBalls(elapsed/1000, balls, cushions, allpockets)
         
     lastTime = timeNow
 
@@ -651,10 +715,18 @@ PoolTable = (ctxt, opts) ->
     pocketedOnTurn = []
     c = cueBall()
     c.direction = cueVec.dup()
+    c.spinDir = cueVec.dup()
     c.speed = cueSpeed
     c.moving = true
+    c.staticFriction = false
     c.angVel = cueAngularVelocity()
+    c.topspin = cueTopspin()
     cueCenterOffset = Vector.Zero(2)
+    # Setup spin states on other balls
+    for b in balls
+      b.spotPos = point(0, 0)
+      if b != cueBall()
+        b.angVel = 0
     console.debug "player #{player} shooting with speed: #{cueSpeed}, dir #{cueVec.inspect()}, english: #{c.angVel}"
   
   shotFinished = ->
