@@ -1,31 +1,24 @@
 # balls.js.coffee
 
-#= require mylibs/scene
+#= require mylibs/circles_scene
+#= require mylibs/Canvas
 
 $(document).ready ->
   # fetch and save the canvas context
-  canvas = $("#maincanvas").get(0)
-  context = canvas.getContext('2d')
-  # translate world for origin at bottom left
-  context.scale(1, -1)
-  context.translate(0, -canvas.height)
-  
-  # Draw a circle on the canvas
-  drawCircle = (c) ->
-    context.fillStyle = c.color
-    context.beginPath()
-    context.arc(c.x(), c.y(), c.radius, 0, Math.PI*2, true);
-    context.closePath();
-    context.fill();
+  canvas = new Canvas($("#maincanvas").get(0), '2d')
+  canvas.setOrigin('topleft')
     
   clearScene = ->
-    context.clearRect 0, 0, canvas.width, canvas.height
+    canvas.clear()
     
+  drawScene = (c) ->
+    canvas.drawCircle(c)
+  
   sc = scene({
-    width: canvas.width,
-    height: canvas.height,
-    clearFunc: clearScene,
-    drawFunc: drawCircle
+    width: canvas.width
+    height: canvas.height
+    clearFunc: clearScene
+    drawFunc: drawScene
   })
 
   $('canvas').click ->

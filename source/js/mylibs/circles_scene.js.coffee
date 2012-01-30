@@ -1,4 +1,5 @@
-# Creates and animates SVG circles 
+# @module scene
+# Module for moving circles in a box
 
 #= require 'libs/raphael-min'
 #= require ./vec
@@ -13,7 +14,6 @@ CIRCLE_COLORS       = ['#00A308', '#FF0066', '#3366FF', '#CCCCCC', '#FFCCFF']
 MAX_VELOCITY_X      = 200
 MAX_VELOCITY_Y      = 50
 
-# the scene object
 scene = (opts) ->
   bw = opts.width
   bh = opts.height

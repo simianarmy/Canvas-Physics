@@ -11,7 +11,7 @@ BALL_RADIUS         = 10
 POCKET_SIZE         = 1.02
 JAW_SIZE            = 1.4
 DECELARATION        = .95
-TABLE_FRICTION      = .95
+TABLE_FRICTION      = .75
 CUSHION_EFFICIENCY  = 1
 CUEING_SCALE        = 10
 BALL_COLORS         = ['white', 'yellow', 'blue', 'red', 'purple', 'orange', '#00DD00', 'maroon',
@@ -195,25 +195,6 @@ PoolTable = (ctxt, opts) ->
     context.moveTo line.pos.e(1), line.pos.e(2)
     context.lineTo endpoint.e(1), endpoint.e(2)
     context.stroke()
-    
-  # Unused but working
-  drawEllipse = (c, width, height) ->
-    centerX = c.x()
-    centerY = c.y()
-    context.beginPath();
-    context.moveTo(centerX, centerY - height/2) # A1
-    context.bezierCurveTo(
-      centerX + width/2, centerY - height/2, # C1
-      centerX + width/2, centerY + height/2, # C2
-      centerX, centerY + height/2) # A2
-
-    context.bezierCurveTo(
-      centerX - width/2, centerY + height/2, # C3
-      centerX - width/2, centerY - height/2, # C4
-      centerX, centerY - height/2) # A1
-
-    context.stroke()
-    context.closePath();
       
   drawPocket = (j, offset=0) ->
     context.beginPath()

@@ -53,6 +53,7 @@ $(document).ready ->
   endShot = ->
     shooting = false
     shotForce = 0
+    $('.shotComment').html('')
   
   playerTurnFinished = (playerInfo) ->
     if !player1Color && playerInfo[currentPlayer]
@@ -65,6 +66,7 @@ $(document).ready ->
     if sc.isGameOver()
       endGame sc.getWinner()
     else
+      $('.shotComment').html('Oooh and that was a bad miss!')
       switchPlayer()
     
   onCollision = (collisionSpeed) ->

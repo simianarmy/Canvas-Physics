@@ -24,3 +24,14 @@
 #poolscreen .hud .shot span {
   font-size: 12px;
 }
+
+#commentary {
+  margin: 0px auto;
+  min-height: 20px;
+}
+
+#commentary span.shotComment {
+  font-weight: bold;
+  font-size: 14px;
+  color: red;
+}

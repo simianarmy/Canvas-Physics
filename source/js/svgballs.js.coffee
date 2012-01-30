@@ -1,6 +1,6 @@
 # main()
 
-#= require ./mylibs/scene
+#= require ./mylibs/circles_scene
 #= require ./mylibs/vec
 
 $(document).ready ->
