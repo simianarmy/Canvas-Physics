@@ -13,20 +13,21 @@
 $(document).ready ->
   canvas = new Canvas($("#maincanvas").get(0))
   #canvas.setOrigin('topleft')
-  elapsed = lastTime = lastAngle = 0
-  startingAngle = 20
-  startingTheta = 90 - startingAngle
+  elapsed = lastTime = startingAngle = startingTheta = 0
+  
   angle = 0
-  angularVel = 15  # degrees / second
   lineLength = 200
   line = null
   ball = null
   objects = []
   paused = true
-  angVel = tanVel = ballDistance = ballAngle = collisionIn = 0
+  angVel = ballDistance = ballAngle = collisionIn = 0
     
   drawInfo = (text) ->
     $('#info').append(text + '<br/>')
+    
+  clearInfo = ->
+    $('#info').html('')
     
   drawText = (text) ->
     canvas.inContext ->
@@ -60,6 +61,10 @@ $(document).ready ->
             canvas.drawCircle obj
     
   setupScene = ->
+    startingAngle = $("input[name=sAngle]").val() || 20
+    angularVel = $("input[name=angVel]").val() || 15
+    startingTheta = 90 - startingAngle
+    
     # draw rotating line
     angle = lastAngle = startingAngle
     line = new Line(canvas.width/2, canvas.height/2, lineLength, 0, {
@@ -71,6 +76,7 @@ $(document).ready ->
       radius: lineLength/8,
       color: 'blue'
     })
+    
     # these two variable can be computed dynamically if the ball is moving
     ballDistance = ball.pos.subtract(line.pos).mag()
     ballAngle = Math.degreesToRadians 90
@@ -78,6 +84,7 @@ $(document).ready ->
     angVel = Math.degreesToRadians(line.angularVelocity())
     objects = [line, ball]
     
+    clearInfo()
     drawInfo("Theta0: #{startingTheta}")
     drawInfo("Line length: #{lineLength}")
     drawInfo("rotation axis: #{line.pos.inspect()}")
@@ -122,8 +129,9 @@ $(document).ready ->
     checkCollisions elapsed
     paused = !paused
       
+  $('input#update').click ->
+    setupScene()
+    
   setupScene()
-  checkCollisions()
-  drawScene(objects, 0)
   tick()
   
