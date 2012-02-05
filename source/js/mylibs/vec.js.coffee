@@ -9,7 +9,7 @@
 
 # isClockwise
 # 
-# Determines if object at p with velocity v is moving clockwise about the origin
+# Determines if object starts at p with velocity v is moving clockwise about the origin
 # @returns {Boolean}
 Vector.isClockwise = (v, p) ->
   n = p.clockwiseNormal()
@@ -93,4 +93,3 @@ Vector::clockwiseNormal = ->
 Vector::moment = (p) ->
   @clockwiseNormal().dot(p)
 
-  

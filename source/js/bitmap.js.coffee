@@ -1,3 +1,6 @@
+# @module bitmapDemo
+
+#= require ./mylibs/Math
 #= require ./mylibs/Polygon
 #= require ./mylibs/collisions
 
@@ -75,7 +78,7 @@ bitmapDemo = (bitmap) ->
     lastRot += 45
     context.save()
     context.translate(imgX, imgY)
-    context.rotate degreesToRadians(lastRot)
+    context.rotate Math.degreesToRadians(lastRot)
     context.drawImage(img, 0, 0)
     context.restore()
 
@@ -85,7 +88,7 @@ bitmapDemo = (bitmap) ->
     context.save()
     context.translate(imgX, imgY)
     context.scale 0.5, 0.5
-    context.rotate degreesToRadians(lastRot)
+    context.rotate Math.degreesToRadians(lastRot)
     context.drawImage(img, 0, 0)
     context.restore()
     

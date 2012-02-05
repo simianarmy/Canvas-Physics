@@ -4,31 +4,54 @@
 
 #= require ./plugins
 #= require mylibs/vec
+#= require mylibs/Math
 #= require mylibs/Line
 #= require mylibs/Circle
 #= require mylibs/Canvas
+#= require mylibs/collisions
 
 $(document).ready ->
   canvas = new Canvas($("#maincanvas").get(0))
-  canvas.setOrigin('topleft')
-  elapsed = lastTime = 0
+  #canvas.setOrigin('topleft')
+  elapsed = lastTime = lastAngle = 0
+  startingAngle = 20
+  startingTheta = 90 - startingAngle
   angle = 0
-  angleInc = .3
+  angularVel = 15  # degrees / second
   lineLength = 200
   line = null
   ball = null
   objects = []
   paused = true
-  
-  drawScene = (objects, dt) ->
+  angVel = tanVel = ballDistance = ballAngle = collisionIn = 0
+    
+  drawInfo = (text) ->
+    $('#info').append(text + '<br/>')
+    
+  drawText = (text) ->
+    canvas.inContext ->
+      ctxt = canvas.context()
+      ctxt.fillStyle    = 'black'
+      ctxt.font         = '12px Arial sans-serif'
+      ctxt.textBaseline = 'top'
+      ctxt.fillText(text, canvas.width/2, 10)
+    
+  drawScene = () ->
     canvas.clear()
+    
+    if collisionIn >= 0
+      drawText "Collision in #{collisionIn}"
+    else if collisionIn == collisions.EMBEDDED
+      drawText "EMBEDDED"
+    else 
+      drawText "No collision"
     
     for obj in objects
       switch obj.name
         when 'Line'
           canvas.inContext ->
             canvas.translate obj.pos.e(1), obj.pos.e(2)
-            canvas.rotate(degreesToRadians(angle))
+            canvas.rotate(Math.degreesToRadians(-obj.rotation))
             canvas.translate(-obj.pos.e(1), -obj.pos.e(2))
             canvas.drawLine(obj)
 
@@ -38,16 +61,42 @@ $(document).ready ->
     
   setupScene = ->
     # draw rotating line
-    angle = 90
+    angle = lastAngle = startingAngle
     line = new Line(canvas.width/2, canvas.height/2, lineLength, 0, {
-      color: 'black'
+      color: 'black',
+      rotation: startingAngle
     })
     # draw stationary circle
-    ball = new Circle(canvas.width/2+lineLength/2, canvas.height/2+40, 0, {
-      radius: lineLength/8
+    ball = new Circle(canvas.width/2+lineLength/1.2, canvas.height/2, 0, {
+      radius: lineLength/8,
       color: 'blue'
     })
+    # these two variable can be computed dynamically if the ball is moving
+    ballDistance = ball.pos.subtract(line.pos).mag()
+    ballAngle = Math.degreesToRadians 90
+    line.setAngularVelocity(angularVel)
+    angVel = Math.degreesToRadians(line.angularVelocity())
     objects = [line, ball]
+    
+    drawInfo("Theta0: #{startingTheta}")
+    drawInfo("Line length: #{lineLength}")
+    drawInfo("rotation axis: #{line.pos.inspect()}")
+    drawInfo("ball pos: #{ball.pos.inspect()}")
+    drawInfo("ball radius: #{ball.radius}")
+    drawInfo("ball angle: #{ballAngle}")
+    drawInfo("axis-ball distance: #{ballDistance}")
+    drawInfo("ang vel: #{angVel}")
+    
+  updateObjects = (t) ->
+    # update the line's rotation
+    rot = line.rotation - line.angularVelocity() * (t / 1000)
+    if Math.abs(rot) >= 360
+      rot = 0
+    line.rotation = rot
+    
+  checkCollisions = (t) ->
+    collisionIn = collisions.angularCollisionLineCircle(Math.degreesToRadians(90-line.rotation), 
+      angVel, lineLength, ball.radius, ballDistance, ballAngle)
     
   # animate all objects
   update = ->
@@ -55,9 +104,8 @@ $(document).ready ->
     timeNow = new Date().getTime()
     if lastTime != 0
       elapsed = timeNow - lastTime
-      angle -= angleInc
-      if Math.abs(angle) >= 360
-        angle = 0
+      updateObjects(elapsed)
+      checkCollisions()
       
     lastTime = timeNow
 
@@ -66,12 +114,16 @@ $(document).ready ->
     requestAnimFrame(tick) 
     unless paused
       update()
-      drawScene(objects, elapsed)
+    
+    drawScene(objects, elapsed)
   
   # event handlers
   $('canvas').click ->
+    checkCollisions elapsed
     paused = !paused
       
   setupScene()
+  checkCollisions()
+  drawScene(objects, 0)
   tick()
   

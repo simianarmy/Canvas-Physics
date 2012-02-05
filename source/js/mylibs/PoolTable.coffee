@@ -1,5 +1,6 @@
-# PoolTable.coffee 
+# @module PoolTable
 
+#= require ./Math
 #= require ./vec
 #= require ./collisions
 #= require ./Line
@@ -319,7 +320,7 @@ PoolTable = (ctxt, opts) ->
       
     context.save()
     context.translate balls[0].pos.e(1), balls[0].pos.e(2)
-    context.rotate degreesToRadians(cueRotDegrees)
+    context.rotate Math.degreesToRadians(cueRotDegrees)
     context.translate ogCuePos.e(1), ogCuePos.e(2)
     context.drawImage(cueImg, 0, 0, cueImg.width, cueImg.height)
     context.restore()

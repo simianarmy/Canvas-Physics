@@ -2,7 +2,8 @@
 
 #= require ../libs/sylvester
 
-collisions = ->
+collisions = {}
+collisions = (->
   # constants
   collisions.NONE     = -1
   collisions.EMBEDDED = -2
@@ -106,6 +107,39 @@ collisions = ->
     t = intersectionTime(c.pos.add(r), c.displacement, wall.pos, wall.vec)
     [t, collisionNormal]
 
+  # Check for collision between rotating line and circle
+  # Anglular values should be in radians
+  # @param {Number} theta0 angle of starting position of line from the vertical
+  # @param {Number} omega angular velocity of rotating line
+  # @param {Number} l line length 
+  # @param {Number} r ball radius
+  # @param {Number} d distance of line origin to ball center
+  # @param {Number} alpha angle of vertical and line to ball center 
+  angularCollisionLineCircle = (theta0, omega, l, r, d, alpha) ->
+    return collisison.NONE if d > l + r
+    return collisions.EMBEDDED if d < r
+    k = 1
+    # move into a  calculation within the range of [0,2pi]
+    alpha -= theta0
+    if omega < 0
+      omega = -omega
+      alpha = -alpha
+      k = -1
+    
+    pi2 = Math.PI * 2
+    while alpha < 0
+      alpha += pi2
+    while alpha > pi2
+      alpha -= pi2
+    
+    # check if there is a possible collision
+    # return collisions.NONE if alpha > omega
+    # now perform the appropriate collision check
+    if d*d <= (l*l + r*r)
+      (alpha - k * Math.asin(r / d)) / omega
+    else
+      (alpha - k * Math.acos((l*l + d*d - r*r) / (2*l*d))) / omega
+      
   isImpendingCollision = (ts) ->
     0 < ts <= 1
   
@@ -321,8 +355,10 @@ collisions = ->
   isImpendingCollision,
   resolveCollision,
   resolveInelasticCollisionFixed,
+  angularCollisionLineCircle,
   pointInTriangle, 
   pointInPolygon}
-  
+)()
+
 root = exports ? window
-root.collisions = collisions()
+root.collisions = collisions

@@ -17,6 +17,8 @@ Canvas = (() ->
     @width = canvasEl.width
     @height = canvasEl.height
   
+  context = () -> @ctxt
+  
   # Set the origin of the canvas
   # @param {String} id (topleft | bottomleft)
   setOrigin = (id) ->
@@ -24,7 +26,9 @@ Canvas = (() ->
       # translate world for origin at bottom left
       @ctxt.scale(1, -1)
       @ctxt.translate(0, -@height)
-  
+    else
+      # bottom left is default
+      
   # Draw a circle on the canvas
   # @param {Circle} c a Circle object
   drawCircle = (c) ->
@@ -96,6 +100,7 @@ Canvas = (() ->
     drawLine: drawLine
     drawEllipse: drawEllipse
     inContext: inContext
+    context: context
     rotate: rotate
     translate: translate
     clear: clear

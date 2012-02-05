@@ -1,8 +1,9 @@
 # @module scene
 # Module for moving circles in a box
 
-#= require 'libs/raphael-min'
+#= require libs/raphael-min
 #= require ./vec
+#= require ./Math
 #= require ./collisions
 #= require ./Line
 #= require ./Circle
@@ -63,15 +64,15 @@ scene = (opts) ->
     
   # Return a random circle color
   randomCircleColor = ->
-    CIRCLE_COLORS[getRandomInt(1, CIRCLE_COLORS.length)-1]
+    CIRCLE_COLORS[Math.getRandomInt(1, CIRCLE_COLORS.length)-1]
     
   # Return a y-value for a circle
   circleY = -> 
-    if freeY then getRandom(-MAX_VELOCITY_Y, MAX_VELOCITY_Y) else 0
+    if freeY then Math.getRandom(-MAX_VELOCITY_Y, MAX_VELOCITY_Y) else 0
       
   # Create and return a new (free) circle
   createFreeCircle = (x, y, i) ->
-    velx = getRandom(-MAX_VELOCITY_X, MAX_VELOCITY_X)
+    velx = Math.getRandom(-MAX_VELOCITY_X, MAX_VELOCITY_X)
     new Circle(x, y, 0, {
       radius: CIRCLE_RADIUS
       velocity: Vector.create([velx, circleY(), 0])
@@ -91,7 +92,7 @@ scene = (opts) ->
     if diff > 0
       # Add balls
       for i in [1..diff]
-        circles.push createFreeCircle(getRandom(0, bw), bh/2, i)
+        circles.push createFreeCircle(Math.getRandom(0, bw), bh/2, i)
     else
       # remove balls
       circles.pop() for i in [1..(circles.length-nballs)]

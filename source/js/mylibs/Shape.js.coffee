@@ -9,9 +9,14 @@ class Shape
     @mass = @efficiency = 1.0
     @collisionNormal  = null # vector
     @[x] = val for x, val of opts
+    # initial speed, angular speed, etc
     @velocity ?= Vector.Zero(3)
     @displacement ?= Vector.Zero(3)
     @direction ?= Vector.Zero(3)
+    @speed ?= 0
+    @rotation ?= 0
+    @angSpeed ?= 0
+    @rotDirection ?= 1
     
   move: (vec) ->
     @pos = @pos.add(vec)
@@ -20,6 +25,20 @@ class Shape
   y: -> @pos.e(2)
   z: -> @pos.e(3)
   
+  angularDirection: -> @rotDirection
+  
+  # calculate shape's angular velocity
+  # @return {Number} pseudovector omega with sign dependent 
+  # on direction of rotation around axis (clockwiseNormal)
+  angularVelocity: ->
+    @angularDirection() * @angSpeed
+    
+  # set the shape's angular velocity 
+  # @param {Number} v degrees/second
+  setAngularVelocity: (v) ->
+    @rotDirection = if v > 0 then 1 else -1
+    @angSpeed = Math.abs(v) # * 180 / Math.PI
+    
   # prototype properties
   toString: -> 
     kvs = for key, val of @ when val? and typeof(val) != 'function'
