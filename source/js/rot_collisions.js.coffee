@@ -40,12 +40,10 @@ $(document).ready ->
   drawScene = () ->
     canvas.clear()
     
-    if collisionIn >= 0
+    if collisions.isImpendingCollision(collisionIn)
       drawText "Collision in #{collisionIn}"
-    else if collisionIn == collisions.EMBEDDED
-      drawText "EMBEDDED"
-    else 
-      drawText "No collision"
+    else
+      drawText "Collision time > 1"
     
     for obj in objects
       switch obj.name

@@ -133,7 +133,8 @@ collisions = (->
       alpha -= pi2
     
     # check if there is a possible collision
-    # return collisions.NONE if alpha > omega
+    return collisions.NONE if alpha > omega
+    
     # now perform the appropriate collision check
     if d*d <= (l*l + r*r)
       (alpha - k * Math.asin(r / d)) / omega
