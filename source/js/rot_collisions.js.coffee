@@ -21,6 +21,7 @@ $(document).ready ->
   ball = null
   objects = []
   paused = true
+  ballMoving = false
   angVel = ballDistance = ballAngle = collisionIn = 0
     
   drawInfo = (text) ->
@@ -40,10 +41,7 @@ $(document).ready ->
   drawScene = () ->
     canvas.clear()
     
-    if collisions.isImpendingCollision(collisionIn)
-      drawText "Collision in #{collisionIn}"
-    else
-      drawText "Collision time > 1"
+    drawText "Collision in #{collisionIn}"
     
     for obj in objects
       switch obj.name
@@ -67,14 +65,17 @@ $(document).ready ->
     angle = lastAngle = startingAngle
     line = new Line(canvas.width/2, canvas.height/2, lineLength, 0, {
       color: 'black',
-      rotation: startingAngle
+      rotation: startingAngle,
+      length: lineLength
     })
     # draw stationary circle
     ball = new Circle(canvas.width/2+lineLength/1.2, canvas.height/2, 0, {
       radius: lineLength/8,
       color: 'blue'
     })
-    
+    if ballMoving = $("input[name=movingBall]:checked").val() == "1"
+      ball.velocity = $V([-5, -10, 0])
+
     # these two variable can be computed dynamically if the ball is moving
     ballDistance = ball.pos.subtract(line.pos).mag()
     ballAngle = Math.degreesToRadians 90
@@ -94,23 +95,32 @@ $(document).ready ->
     
   updateObjects = (t) ->
     # update the line's rotation
-    rot = line.rotation - line.angularVelocity() * (t / 1000)
+    rot = line.rotation - line.angularVelocity() * t
     if Math.abs(rot) >= 360
       rot = 0
     line.rotation = rot
+    ball.moveByTime(t)
     
   checkCollisions = (t) ->
-    collisionIn = collisions.angularCollisionLineCircle(Math.degreesToRadians(90-line.rotation), 
-      angVel, lineLength, ball.radius, ballDistance, ballAngle)
+    # Use different detection methods depending on ball movement
+    if ballMoving
+      res = collisions.angularCollisionLineCircle2 line, ball, t
+      collisionIn = res.t
+      paused = collisionIn == 0
+    else
+      collisionIn = collisions.angularCollisionLineCircle(Math.degreesToRadians(90-line.rotation), 
+        angVel, lineLength, ball.radius, ballDistance, ballAngle)
     
+    
+  
   # animate all objects
   update = ->
     # Pass latest timestep to the collision detection function
     timeNow = new Date().getTime()
     if lastTime != 0
-      elapsed = timeNow - lastTime
+      elapsed = (timeNow - lastTime) / 1000
       updateObjects(elapsed)
-      checkCollisions()
+      checkCollisions(elapsed)
       
     lastTime = timeNow
 
@@ -121,14 +131,12 @@ $(document).ready ->
       update()
     
     drawScene(objects, elapsed)
-  
+    
   # event handlers
   $('canvas').click ->
-    checkCollisions elapsed
     paused = !paused
       
-  $('input#update').click ->
-    setupScene()
+  $('input').change -> setupScene()
     
   setupScene()
   tick()

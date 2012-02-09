@@ -8,7 +8,7 @@ class Line extends Shape
     super(sx, sy, 0, opts)
     @vec = $V([ex, ey, 0])
     @name = 'Line'
-  
+      
   toString: ->
     "Line: " + super + " vector: " + @vec.inspect()
 

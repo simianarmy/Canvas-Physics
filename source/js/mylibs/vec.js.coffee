@@ -15,12 +15,14 @@ Vector.isClockwise = (v, p) ->
   n = p.clockwiseNormal()
   v.component(n) > 0
 
-# unitVectorFromAngle
+# directionVector
 #
-# general-purpose function to keep clockwiseNormal() consistent
-# @returns {Vector}
-Vector.unitVectorFromAngle = (angle) ->
-  $V(Math.sin(angle), Math.cos(angle))
+# @param {Number} angle angle in radians or degrees
+# @param {String} unit d|r degrees or radians
+# @return a 3D vector pointing at ang clockwise from the positive x-axis
+Vector.directionVector = (angle, unit='r') ->
+  ang *= (Math.PI / 180) if unit == 'd'
+  $V([Math.cos(angle), Math.sin(angle), 0])
   
 # Instance functions
 

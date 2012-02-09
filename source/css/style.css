@@ -217,6 +217,11 @@ header {
   list-style: none;
 }
 
+#controls li {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+}
+
 #main {
   margin: 10px auto;
   width: 90%;

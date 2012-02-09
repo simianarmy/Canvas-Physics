@@ -2,12 +2,7 @@
 
 #= require ../libs/sylvester
 
-collisions = {}
-collisions = (->
-  # constants
-  collisions.NONE     = -1
-  collisions.EMBEDDED = -2
-  
+collisions = (->  
   # intersection
   # Finds the point where 2 lines AB and CD intersect
   # @returns {Number} time 
@@ -107,7 +102,7 @@ collisions = (->
     t = intersectionTime(c.pos.add(r), c.displacement, wall.pos, wall.vec)
     [t, collisionNormal]
 
-  # Check for collision between rotating line and circle
+  # Detect collision between rotating line and circle
   # Anglular values should be in radians
   # @param {Number} theta0 angle of starting position of line from the vertical
   # @param {Number} omega angular velocity of rotating line
@@ -115,6 +110,10 @@ collisions = (->
   # @param {Number} r ball radius
   # @param {Number} d distance of line origin to ball center
   # @param {Number} alpha angle of vertical and line to ball center 
+  # @return {Number} NONE or EMBEDDED or time to collision (if < 1)
+  # TODO: Support for cases where the rotating line is offset from its rotating point.
+  #   requires mystery value x for final equation: 
+  #   (alpha - theta0 - k * Math.asin((r - x) / d)) / omega
   angularCollisionLineCircle = (theta0, omega, l, r, d, alpha) ->
     return collisison.NONE if d > l + r
     return collisions.EMBEDDED if d < r
@@ -141,6 +140,52 @@ collisions = (->
     else
       (alpha - k * Math.acos((l*l + d*d - r*r) / (2*l*d))) / omega
       
+  # Detect collision between rotating line and moving or stationary circle.
+  # This method is quite different than angularCollisionLineCircle() - 
+  # it is from the MPFP CDROM collision simulation Director code.  
+  # NB: No support for cases where the rotating line is offset from its rotating point.
+  # @param {Line} line shape
+  # @param {Circle} circle shape
+  # @param {Number} ts current timestep
+  # @return {Object} 
+  #   t: time to collision (0 if collision detected)
+  #   moment1: no idea
+  #   moment2: no idea
+  angularCollisionLineCircle2 = (line, circle, ts) ->
+    # determine start and end positions
+    startPos = circle.pos.subtract(line.pos)
+    endPos = circle.locationAfter(ts).subtract(line.locationAfter(ts))
+    
+    lineStartAng = Math.degreesToRadians(line.rotation)
+    lineAngDisp = line.angularVelocity() * ts
+    lineEndAng = lineStartAng + lineAngDisp
+    
+    n1 = Vector.directionVector(lineStartAng + Math.PI/2)
+    n2 = Vector.directionVector(lineEndAng + Math.PI/2)
+    
+    # point n1 and n2 towards the initial position of the circle
+    startDist = n1.dot(startPos)
+    if startDist < 0
+      n1 = n1.x(-1)
+      n2 = n2.x(-2)
+      startDist = -startDist
+      
+    # check if circle crosses the line
+    r = circle.radius
+    if ((startDist - r) * (n2.dot(endPos) - r) < 0)
+      # check if intersection overlaps the line
+      if ((startPos.subtract(n1.x(r)).mag() <= line.length) ||
+      (endPos.subtract(n2.x(r)).mag() <= line.length))
+        return {t: 0,
+        normal: n1.x(-1),
+        moment1: $V([0, 0, 0]),
+        moment2: startPos.subtract(n1.x(r))
+        }
+
+    # otherwise, check for intersection with line endpoints
+    # TODO:
+    {t: collisions.NONE}
+    
   isImpendingCollision = (ts) ->
     0 < ts <= 1
   
@@ -357,9 +402,14 @@ collisions = (->
   resolveCollision,
   resolveInelasticCollisionFixed,
   angularCollisionLineCircle,
+  angularCollisionLineCircle2,
   pointInTriangle, 
   pointInPolygon}
 )()
+
+# constants
+collisions.NONE     = -1
+collisions.EMBEDDED = -2
 
 root = exports ? window
 root.collisions = collisions

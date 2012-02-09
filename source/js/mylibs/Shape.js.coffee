@@ -18,8 +18,22 @@ class Shape
     @angSpeed ?= 0
     @rotDirection ?= 1
     
+  # move object position
+  # @param {Vector} vec vector of movement
+  # @return {Vector} new position
   move: (vec) ->
     @pos = @pos.add(vec)
+    
+  # move object position using ahead by some timestep
+  # @param {Number} t timestep
+  moveByTime: (t) ->
+    @pos = @locationAfter(t)
+  
+  # determine shape's location after some time
+  # @param {Number} t timestep
+  # @return {Vector} new position
+  locationAfter: (t) ->
+    @pos.add(@velocity.x(t))
     
   x: -> @pos.e(1)
   y: -> @pos.e(2)
