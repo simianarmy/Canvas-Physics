@@ -12,7 +12,7 @@
 
 $(document).ready ->
   canvas = new Canvas($("#maincanvas").get(0))
-  #canvas.setOrigin('topleft')
+  canvas.setOrigin('bottomleft')
   elapsed = lastTime = startingAngle = startingTheta = 0
   
   angle = 0
@@ -31,12 +31,16 @@ $(document).ready ->
     $('#info').html('')
     
   drawText = (text) ->
-    canvas.inContext ->
-      ctxt = canvas.context()
+    canvas.inContext((ctxt) ->
+      # when origin is cartesian, we must restore to world view to draw text
+      if !canvas.inWorldView()
+        ctxt.scale(1, -1);
+        ctxt.translate(0, -canvas.height);
       ctxt.fillStyle    = 'black'
       ctxt.font         = '12px Arial sans-serif'
       ctxt.textBaseline = 'top'
-      ctxt.fillText(text, canvas.width/2, 10)
+      ctxt.fillText(text, canvas.width/2, 20)
+    )
     
   drawScene = () ->
     canvas.clear()
@@ -48,7 +52,7 @@ $(document).ready ->
         when 'Line'
           canvas.inContext ->
             canvas.translate obj.pos.e(1), obj.pos.e(2)
-            canvas.rotate(Math.degreesToRadians(-obj.rotation))
+            canvas.rotate(Math.degreesToRadians(obj.rotation))
             canvas.translate(-obj.pos.e(1), -obj.pos.e(2))
             canvas.drawLine(obj)
 
@@ -57,8 +61,9 @@ $(document).ready ->
             canvas.drawCircle obj
     
   setupScene = ->
-    startingAngle = $("input[name=sAngle]").val() || 20
-    angularVel = $("input[name=angVel]").val() || 15
+    startingAngle = $("input[name=sAngle]").val() || 0
+    angularVel = $("input[name=angVel]").val() || 0
+    $('#sangle').html("#{startingAngle} deg.")
     startingTheta = 90 - startingAngle
     
     # draw rotating line
@@ -74,7 +79,7 @@ $(document).ready ->
       color: 'blue'
     })
     if ballMoving = $("input[name=movingBall]:checked").val() == "1"
-      ball.velocity = $V([-5, -10, 0])
+      ball.velocity = $V([-5, 10, 0])
 
     # these two variable can be computed dynamically if the ball is moving
     ballDistance = ball.pos.subtract(line.pos).mag()

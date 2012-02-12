@@ -21,7 +21,7 @@ Vector.isClockwise = (v, p) ->
 # @param {String} unit d|r degrees or radians
 # @return a 3D vector pointing at ang clockwise from the positive x-axis
 Vector.directionVector = (angle, unit='r') ->
-  ang *= (Math.PI / 180) if unit == 'd'
+  angle *= (Math.PI / 180) if unit == 'd'
   $V([Math.cos(angle), Math.sin(angle), 0])
   
 # Instance functions

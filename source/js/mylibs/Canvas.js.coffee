@@ -16,19 +16,28 @@ Canvas = (() ->
     @ctxt = canvasEl.getContext(@mode)
     @width = canvasEl.width
     @height = canvasEl.height
+    @worldView = true # Default origin top left
   
   context = () -> @ctxt
   
   # Set the origin of the canvas
   # @param {String} id (topleft | bottomleft)
   setOrigin = (id) ->
-    if id == 'topleft'
+    if @worldView && (id == 'bottomleft')
       # translate world for origin at bottom left
+      @ctxt.translate(0, @height)
+      @ctxt.scale(1, -1)
+      @worldView = false
+    else if !@worldView
+      # bottom left is default
       @ctxt.scale(1, -1)
       @ctxt.translate(0, -@height)
-    else
-      # bottom left is default
-      
+      @worldView = true
+  
+  # @return true if drawing with world view coordinates (default = true)
+  inWorldView = () ->
+    @worldView
+    
   # Draw a circle on the canvas
   # @param {Circle} c a Circle object
   drawCircle = (c) ->
@@ -88,7 +97,7 @@ Canvas = (() ->
   # Perform actions in a canvas context
   inContext = (fn) ->
     @ctxt.save()
-    fn()
+    fn(@ctxt) # pass context back to callback as argument
     @ctxt.restore()
     
   # return the constructor
@@ -100,6 +109,7 @@ Canvas = (() ->
     drawLine: drawLine
     drawEllipse: drawEllipse
     inContext: inContext
+    inWorldView: inWorldView
     context: context
     rotate: rotate
     translate: translate

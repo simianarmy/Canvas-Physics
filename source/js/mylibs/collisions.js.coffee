@@ -103,7 +103,7 @@ collisions = (->
     [t, collisionNormal]
 
   # Detect collision between rotating line and circle
-  # Anglular values should be in radians
+  # Anglular values must be in radians
   # @param {Number} theta0 angle of starting position of line from the vertical
   # @param {Number} omega angular velocity of rotating line
   # @param {Number} l line length 
@@ -117,6 +117,7 @@ collisions = (->
   angularCollisionLineCircle = (theta0, omega, l, r, d, alpha) ->
     return collisison.NONE if d > l + r
     return collisions.EMBEDDED if d < r
+    # k = 1 for clockwise motion, -1 otherwise
     k = 1
     # move into a  calculation within the range of [0,2pi]
     alpha -= theta0
@@ -131,7 +132,8 @@ collisions = (->
     while alpha > pi2
       alpha -= pi2
     
-    # check if there is a possible collision
+    # check if there is a possible collision.
+    # this means any collision in t > 1 will not be considered.
     return collisions.NONE if alpha > omega
     
     # now perform the appropriate collision check
@@ -141,14 +143,15 @@ collisions = (->
       (alpha - k * Math.acos((l*l + d*d - r*r) / (2*l*d))) / omega
       
   # Detect collision between rotating line and moving or stationary circle.
-  # This method is quite different than angularCollisionLineCircle() - 
-  # it is from the MPFP CDROM collision simulation Director code.  
-  # NB: No support for cases where the rotating line is offset from its rotating point.
+  # This method is quite different than angularCollisionLineCircle() which only 
+  # deals with stationary circles.
+  # From the MPFP CDROM collision simulation Director code.  
+  # TODO: Support for cases where the rotating line is offset from its rotating point.
   # @param {Line} line shape
   # @param {Circle} circle shape
   # @param {Number} ts current timestep
   # @return {Object} 
-  #   t: time to collision (0 if collision detected)
+  #   t: 0 if collision detected, collisions.NONE if not
   #   moment1: no idea
   #   moment2: no idea
   angularCollisionLineCircle2 = (line, circle, ts) ->
@@ -169,12 +172,26 @@ collisions = (->
       n1 = n1.x(-1)
       n2 = n2.x(-2)
       startDist = -startDist
-      
-    # check if circle crosses the line
+
+    noColl = {t: collisions.NONE}
     r = circle.radius
-    if ((startDist - r) * (n2.dot(endPos) - r) < 0)
-      # check if intersection overlaps the line
-      if ((startPos.subtract(n1.x(r)).mag() <= line.length) ||
+    
+    # debug shit
+    console.log "start: #{startPos.inspect()} end: #{endPos.inspect()}"
+    console.log "line start ang: #{lineStartAng} lineEndAng: #{lineEndAng}"
+    console.log "n1: #{n1.inspect()}"
+    console.log "n2: #{n2.inspect()}"
+    # NOTE:
+    # Equation can't be solved algebraically - an approximation method must be used
+    # Save time by checking whether it's possible for the 2 objects to collide at all
+    
+    # 1. Check if circle intersects the complete circle swept out by the line
+    unless (startDist - r) * (n2.dot(endPos) - r) < 0
+      return noColl
+      
+    # 2. Check if angle swept out by the circle during the time interval 
+    # overlaps with the angle swept out by the line.
+    if ((startPos.subtract(n1.x(r)).mag() <= line.length) ||
       (endPos.subtract(n2.x(r)).mag() <= line.length))
         return {t: 0,
         normal: n1.x(-1),
@@ -184,7 +201,7 @@ collisions = (->
 
     # otherwise, check for intersection with line endpoints
     # TODO:
-    {t: collisions.NONE}
+    noColl
     
   isImpendingCollision = (ts) ->
     0 < ts <= 1
