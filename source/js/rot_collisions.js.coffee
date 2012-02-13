@@ -55,9 +55,6 @@ $(document).ready ->
         when 'Line'
           canvas.drawCircleAt(obj.x(), obj.y(), 1, {color: 'black'})
           canvas.inContext ->
-            # Draw point at origin of line
-            canvas.drawCircleAt(obj.x(), obj.y(), 1, {color: 'black'})
-            
             if obj.rotation != 0
               canvas.translate obj.x(), obj.y()
               canvas.rotate(Math.degreesToRadians(obj.rotation))
