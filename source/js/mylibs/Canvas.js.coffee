@@ -41,12 +41,16 @@ Canvas = (() ->
   # Draw a circle on the canvas
   # @param {Circle} c a Circle object
   drawCircle = (c) ->
-    @ctxt.fillStyle = c.color if c.color?
+    @drawCircleAt c.x(), c.y(), c.radius, c
+
+  # Draw circle from coordinates and radius
+  drawCircleAt = (x, y, radius, opts) ->
+    @ctxt.fillStyle = opts.color if opts.color?
     @ctxt.beginPath()
-    @ctxt.arc(c.x(), c.y(), c.radius, 0, Math.PI*2, true);
+    @ctxt.arc(x, y, radius, 0, Math.PI*2, true);
     @ctxt.closePath();
     @ctxt.fill();
-
+    
   # Draw a line on the canvas
   # @param {Line} line a Line object
   drawLine = (line) ->
@@ -77,6 +81,16 @@ Canvas = (() ->
     @ctxt.stroke()
     @ctxt.closePath();
   
+  # Draw a rectangle
+  # @param {Shape} a Rectangle object
+  # @param {Object} opts draw options
+  drawRect = (rect, opts) ->
+    o = rect.origin() # get origin vector
+    @ctxt.beginPath();
+    @ctxt.rect(o.e(1), o.e(2), rect.width, rect.height)
+    @ctxt.closePath()
+    @ctxt.stroke()
+    
   # rotate the canvas
   # @params {Float} rot radians
   rotate = (rot) ->
@@ -106,8 +120,10 @@ Canvas = (() ->
     version: "1.0"
     setOrigin: setOrigin
     drawCircle: drawCircle
+    drawCircleAt: drawCircleAt
     drawLine: drawLine
     drawEllipse: drawEllipse
+    drawRect: drawRect
     inContext: inContext
     inWorldView: inWorldView
     context: context

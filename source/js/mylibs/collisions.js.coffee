@@ -110,11 +110,12 @@ collisions = (->
   # @param {Number} r ball radius
   # @param {Number} d distance of line origin to ball center
   # @param {Number} alpha angle of vertical and line to ball center 
+  # @param {Number} perpDist perpendicular distance of line from center of rotation
   # @return {Number} NONE or EMBEDDED or time to collision (if < 1)
   # TODO: Support for cases where the rotating line is offset from its rotating point.
   #   requires mystery value x for final equation: 
   #   (alpha - theta0 - k * Math.asin((r - x) / d)) / omega
-  angularCollisionLineCircle = (theta0, omega, l, r, d, alpha) ->
+  angularCollisionLineCircle = (theta0, omega, l, r, d, alpha, perpDist) ->
     return collisison.NONE if d > l + r
     return collisions.EMBEDDED if d < r
     # k = 1 for clockwise motion, -1 otherwise
@@ -138,7 +139,7 @@ collisions = (->
     
     # now perform the appropriate collision check
     if d*d <= (l*l + r*r)
-      (alpha - k * Math.asin(r / d)) / omega
+      (alpha - k * Math.asin((r-perpDist) / d)) / omega
     else
       (alpha - k * Math.acos((l*l + d*d - r*r) / (2*l*d))) / omega
       

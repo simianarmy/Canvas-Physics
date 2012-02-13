@@ -18,7 +18,7 @@ class Shape
     @angSpeed ?= 0
     @rotDirection ?= 1
     
-  # move object position
+  # move object position by vector amount
   # @param {Vector} vec vector of movement
   # @return {Vector} new position
   move: (vec) ->
@@ -29,6 +29,11 @@ class Shape
   moveByTime: (t) ->
     @pos = @locationAfter(t)
   
+  # move object to a position
+  # @param {Vector} newPos new position
+  moveTo: (newPos) ->
+    @pos = newPos.dup()
+    
   # determine shape's location after some time
   # @param {Number} t timestep
   # @return {Vector} new position

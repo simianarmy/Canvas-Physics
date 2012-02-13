@@ -26,6 +26,14 @@ Vector.directionVector = (angle, unit='r') ->
   
 # Instance functions
 
+# to2D
+#
+# Forces a vector to 2d.  Useful to keep Sylvester functions from 
+# breaking when mixing 3d & 2d args.
+# @return {Vector} 2d vector
+Vector::to2D = ->
+  $V([@elements[0], @elements[1]])
+  
 # mag
 #
 # Calculates the magnitude (length) of the vector and returns the result 
