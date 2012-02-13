@@ -53,19 +53,22 @@ $(document).ready ->
     for obj in objects
       switch obj.name
         when 'Line'
+          canvas.drawCircleAt(obj.x(), obj.y(), 1, {color: 'black'})
           canvas.inContext ->
+            # Draw point at origin of line
+            canvas.drawCircleAt(obj.x(), obj.y(), 1, {color: 'black'})
+            
             if obj.rotation != 0
               canvas.translate obj.x(), obj.y()
               canvas.rotate(Math.degreesToRadians(obj.rotation))
               canvas.translate(-obj.x(), -obj.y())
-            canvas.drawLine(obj)
+              canvas.drawLine(obj)
 
         when 'Circle'
           canvas.inContext ->
             canvas.drawCircle obj
         
         when 'Rectangle'
-          #continue
           canvas.inContext((ctxt) ->
             # Draw center of rectangle
             canvas.drawCircleAt(obj.x(), obj.y(), 2, {color: 'black'})
@@ -116,17 +119,19 @@ $(document).ready ->
     line.setAngularVelocity(angularVel)
     angVel = Math.degreesToRadians(line.angularVelocity())
     objects = [line, ball, rec]
+    lineToCenterDist = line.pos.subtract(rec.pos).mag()
     
     clearInfo()
     drawInfo("Theta0: #{startingTheta}")
+    drawInfo("Angle: #{line.rotation}")
+    drawInfo("ball angle: 90")
     drawInfo("Line length: #{lineLength}")
     drawInfo("rotation axis: #{line.pos.inspect()}")
-    drawInfo("ball pos: #{ball.pos.inspect()}")
-    drawInfo("ball radius: #{ball.radius}")
-    drawInfo("ball angle: #{ballAngle}")
+    drawInfo("ball pos: #{ball.pos.inspect()}")    
     drawInfo("axis-ball distance: #{ballDistance}")
     drawInfo("ang vel: #{angVel}")
     drawInfo("k: #{perpDist}")
+    drawInfo("d to center: #{lineToCenterDist}")
     
   updateObjects = (t) ->
     # update the line's rotation
@@ -161,13 +166,14 @@ $(document).ready ->
   checkCollisions = (t) ->
     # Use different detection methods depending on ball movement
     if ballMoving
+      # BUG: False positives at omega > 16!??
       res = collisions.angularCollisionLineCircle2 line, ball, t
       collisionIn = res.t
       paused = collisionIn == 0
     else
       collisionIn = collisions.angularCollisionLineCircle(Math.degreesToRadians(90-line.rotation), 
         angVel, lineLength, ball.radius, ballDistance, ballAngle, perpDist)
-      paused = collisions.isImpendingCollision(collisionIn)
+      paused = collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
     
   
   # animate all objects
@@ -176,6 +182,7 @@ $(document).ready ->
     timeNow = new Date().getTime()
     if lastTime != 0
       elapsed = (timeNow - lastTime) / 1000
+      elapsed = 0.1 if elapsed > 0.1
       updateObjects(elapsed)
       checkCollisions(elapsed)
       
