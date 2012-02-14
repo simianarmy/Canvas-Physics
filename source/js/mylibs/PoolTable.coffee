@@ -270,7 +270,7 @@ PoolTable = (ctxt, opts) ->
     ps = b.spotPos.add(b.spinDir).x(b.topspin / (2 * Math.PI))
     if ps.mag() > ballRadius
       ps = b.spotPos.x(-1)
-    ps = ps.rotate(b.angVel)
+    ps = ps.rotate(b.angVel, b.pos)
     b.spotPos = ps.dup()
     #newspot = b.pos.add(ps)
     if b.angVel

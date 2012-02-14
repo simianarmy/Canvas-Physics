@@ -33,7 +33,7 @@ $(document).ready ->
   clearInfo = ->
     $('#info').html('')
     
-  drawText = (text) ->
+  drawText = (text, x, y) ->
     canvas.inContext((ctxt) ->
       # when origin is cartesian, we must restore to world view to draw text
       if !canvas.inWorldView()
@@ -42,13 +42,14 @@ $(document).ready ->
       ctxt.fillStyle    = 'black'
       ctxt.font         = '12px Arial sans-serif'
       ctxt.textBaseline = 'top'
-      ctxt.fillText(text, canvas.width/2, 20)
+      ctxt.fillText(text, x, y)
     )
     
   drawScene = () ->
     canvas.clear()
     
-    drawText "Collision in #{collisionIn}"
+    drawText "Collision in #{collisionIn}", canvas.width/2, 20
+    drawText "angle: #{line.rotation}", canvas.width/2, 40
     
     for obj in objects
       switch obj.name
@@ -82,7 +83,8 @@ $(document).ready ->
     angularVel = $("input[name=angVel]").val() || 0
     ballMoving = $("input[name=movingBall]:checked").val() == "1"
     rotationOffset = $("input[name=rotationOffset]:checked").val() == "1"
-    $('#sangle').html("#{startingAngle} deg.")
+    $('#sangle').html(startingAngle)
+    $('#angvel').html(angularVel)
     startingTheta = 90 - startingAngle
     
     # draw rotating line
@@ -137,27 +139,14 @@ $(document).ready ->
     if Math.abs(rot) >= 360
       rot = 0
     
-    console.log("angle: #{rot}")
     ball.moveByTime(t)
     line.rotation = rot
     rec.rotation = rot
-    # Get new origin of rotated rectangle and move line to it
+    # if rotating around a point
     if rotationOffset
+      # get new origin of rotated rectangle and move line to it
       o = rec.cartesianOrigin()
-      # translate origin so that center of rotation is at 0,0
-      op = o.subtract(rec.pos).to2D()
-      rrot = Math.degreesToRadians rot
-      # 2x2 matrix for counterclockwise rotation of angle radians
-      # clockwise rotation
-      #  $M([
-      #         [Math.cos(rrot), Math.sin(rrot), 0], 
-      #         [-Math.sin(rrot), Math.cos(rrot), 0],
-      #         ])
-      rotm = Matrix.Rotation rrot
-      pp = rotm.x(op)
-      # translate origin back by adding pos (2d this time)
-      o2 = pp.add(rec.pos.to2D())
-      
+      o2 = o.to2D().rotate(Math.degreesToRadians(rot), rec.pos.to2D())      
       line.moveTo $V([o2.e(1), o2.e(2), 0])
     
   checkCollisions = (t) ->

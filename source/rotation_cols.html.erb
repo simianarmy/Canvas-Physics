@@ -9,10 +9,11 @@
     <ul id="controls">
       <li>
         Starting angle: <input type="range" name="sAngle" min="0" max="90" step="1" value="75">
-        <span id="sangle"></span>
+        <span id="sangle"></span> degrees
       </li>
       <li>
-        Angular velocity: <input name="angVel" size="3" value="15"/> degrees/second
+        Angular velocity: <input type="range" name="angVel" min="1" max="180" step="1" value="25">
+        <span id="angvel"></span> degrees/second
       </li>
       <li>
         <input type="checkbox" name="movingBall" value="1"> Moving ball

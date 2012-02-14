@@ -161,7 +161,7 @@ collisions = (->
     endPos = circle.locationAfter(ts).subtract(line.locationAfter(ts))
     
     lineStartAng = Math.degreesToRadians(line.rotation)
-    lineAngDisp = line.angularVelocity() * ts
+    lineAngDisp = line.angularVelocity('r') * ts
     lineEndAng = lineStartAng + lineAngDisp
     
     n1 = Vector.directionVector(lineStartAng + Math.PI/2)
@@ -178,10 +178,10 @@ collisions = (->
     r = circle.radius
     
     # debug shit
-    console.log "start: #{startPos.inspect()} end: #{endPos.inspect()}"
-    console.log "line start ang: #{lineStartAng} lineEndAng: #{lineEndAng}"
-    console.log "n1: #{n1.inspect()}"
-    console.log "n2: #{n2.inspect()}"
+    # console.log "start: #{startPos.inspect()} end: #{endPos.inspect()}"
+    #     console.log "line start ang: #{lineStartAng} lineEndAng: #{lineEndAng}"
+    #     console.log "n1: #{n1.inspect()}"
+    #     console.log "n2: #{n2.inspect()}"
     # NOTE:
     # Equation can't be solved algebraically - an approximation method must be used
     # Save time by checking whether it's possible for the 2 objects to collide at all

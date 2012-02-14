@@ -47,10 +47,14 @@ class Shape
   angularDirection: -> @rotDirection
   
   # calculate shape's angular velocity
+  # @param {String} unit (d)egrees or (r)adians - default: d
   # @return {Number} pseudovector omega with sign dependent 
   # on direction of rotation around axis (clockwiseNormal)
-  angularVelocity: ->
-    @angularDirection() * @angSpeed
+  angularVelocity: (unit='d') ->
+    if unit == 'd'
+      @angularDirection() * @angSpeed
+    else
+      (@angularDirection() * @angSpeed) * Math.PI / 180
     
   # set the shape's angular velocity 
   # @param {Number} v degrees/second
