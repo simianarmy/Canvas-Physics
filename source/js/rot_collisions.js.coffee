@@ -14,17 +14,19 @@
 $(document).ready ->
   canvas = new Canvas($("#maincanvas").get(0))
   canvas.setOrigin('bottomleft')
-  elapsed = lastTime = startingAngle = startingTheta = 0
+  elapsed = lastTime = 0
   
-  angle = 0
   lineLength = 200
   line = null
   ball = null
   rec = null
   objects = []
+  otherObject = 0
   paused = true
   ballMoving = false
   rotationOffset = false
+  angle = 0
+  startingAngle = startingTheta = 0
   angVel = ballDistance = ballAngle = perpDist = collisionIn = 0
     
   drawInfo = (text) ->
@@ -79,55 +81,69 @@ $(document).ready ->
             )
   
   setupScene = ->
-    startingAngle = $("input[name=sAngle]").val() || 0
+    angle = lastAngle = startingAngle = $("input[name=sAngle]").val() || 0
     angularVel = $("input[name=angVel]").val() || 0
-    ballMoving = $("input[name=movingBall]:checked").val() == "1"
+    otherObject = parseInt($("input[name=object]:checked").val())
     rotationOffset = $("input[name=rotationOffset]:checked").val() == "1"
     $('#sangle').html(startingAngle)
     $('#angvel').html(angularVel)
     startingTheta = 90 - startingAngle
+    objects = []
+    ball = null
+    line2 = null
     
     # draw rotating line
-    angle = lastAngle = startingAngle
     line = new Line(canvas.width/2, canvas.height/2, lineLength, 0, {
       color: 'black',
       rotation: startingAngle,
       length: lineLength
     })
-    # draw stationary circle
-    ball = new Circle(canvas.width/2+lineLength/1.2, canvas.height/2, 0, {
-      radius: lineLength/8,
-      color: 'blue'
-    })
+    objects.push line
+    
+    # Create other object based on selection
+    switch otherObject
+      when 1, 2
+        # other object is ball
+        ball = new Circle(canvas.width/2+lineLength/1.2, canvas.height/2, 0, {
+          radius: lineLength/8,
+          color: 'blue'
+        })
+        # give ball a velocity if moving option checked
+        if otherObject == 2
+          ballMoving = true
+          ball.velocity = $V([-5, 10, 0])
+        # these two variable can be computed dynamically if the ball is moving
+        ballDistance = ball.pos.subtract(line.pos).mag()
+        ballAngle = Math.degreesToRadians 90
+        objects.push ball
+      when 3, 4
+        # other object is line
+        line2 = new Line(canvas.width/2+80, canvas.height/2-50, lineLength*1.5, 0, {
+          color: 'black',
+          rotation: startingAngle-24,
+          length: lineLength*1.5
+        })
+        objects.push line2
+    
     rec = new Rectangle(canvas.width/2, canvas.height/2, 0, 40, 40, {
       rotation: startingAngle
     })
-    # give ball a velocity if moving option checked
-    if ballMoving
-      ball.velocity = $V([-5, 10, 0])
-      
+    
     # make line fixed to rectangle side if rotation offset checked
     if rotationOffset
       line.moveTo(if canvas.inWorldView() then rec.origin() else rec.cartesianOrigin())
       # point of rotation's perp. distance from line
       perpDist = rec.height / 2
       
-    # these two variable can be computed dynamically if the ball is moving
-    ballDistance = ball.pos.subtract(line.pos).mag()
-    ballAngle = Math.degreesToRadians 90
     line.setAngularVelocity(angularVel)
     angVel = Math.degreesToRadians(line.angularVelocity())
-    objects = [line, ball, rec]
     lineToCenterDist = line.pos.subtract(rec.pos).mag()
     
     clearInfo()
     drawInfo("Theta0: #{startingTheta}")
     drawInfo("Angle: #{line.rotation}")
-    drawInfo("ball angle: 90")
     drawInfo("Line length: #{lineLength}")
     drawInfo("rotation axis: #{line.pos.inspect()}")
-    drawInfo("ball pos: #{ball.pos.inspect()}")    
-    drawInfo("axis-ball distance: #{ballDistance}")
     drawInfo("ang vel: #{angVel}")
     drawInfo("k: #{perpDist}")
     drawInfo("d to center: #{lineToCenterDist}")
@@ -139,7 +155,7 @@ $(document).ready ->
     if Math.abs(rot) >= 360
       rot = 0
     
-    ball.moveByTime(t)
+    ball.moveByTime(t) if ball
     line.rotation = rot
     rec.rotation = rot
     # if rotating around a point
@@ -156,11 +172,12 @@ $(document).ready ->
       res = collisions.angularCollisionLineCircle2 line, ball, t
       collisionIn = res.t
       paused = collisionIn == 0
-    else
+    else if ball
       collisionIn = collisions.angularCollisionLineCircle(Math.degreesToRadians(90-line.rotation), 
         angVel, lineLength, ball.radius, ballDistance, ballAngle, perpDist)
       paused = collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
-    
+    else # another line
+      collisionIn = collisions.angularCollisionLineStationaryLine()
   
   # animate all objects
   update = ->
