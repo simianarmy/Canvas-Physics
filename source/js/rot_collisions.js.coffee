@@ -17,7 +17,7 @@ $(document).ready ->
   elapsed = lastTime = 0
   
   lineLength = 200
-  line = null
+  line = line2 = null
   ball = null
   rec = null
   objects = []
@@ -171,13 +171,20 @@ $(document).ready ->
       # BUG: False positives at omega > 16!??
       res = collisions.angularCollisionLineCircle2 line, ball, t
       collisionIn = res.t
-      paused = collisionIn == 0
     else if ball
-      collisionIn = collisions.angularCollisionLineCircle(Math.degreesToRadians(90-line.rotation), 
-        angVel, lineLength, ball.radius, ballDistance, ballAngle, perpDist)
+      collisionIn = collisions.angularCollisionLineCircle(
+        Math.degreesToRadians(90-line.rotation), 
+        angVel, lineLength, 
+        ball.radius, ballDistance, ballAngle, 
+        perpDist)
       paused = collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
     else # another line
-      collisionIn = collisions.angularCollisionLineStationaryLine()
+      collisionIn = collisions.angularCollisionLineStationaryLine(
+        Math.degreesToRadians(90-line.rotation),
+        angVel, 
+        line, line2, 0)
+        
+    paused = collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
   
   # animate all objects
   update = ->

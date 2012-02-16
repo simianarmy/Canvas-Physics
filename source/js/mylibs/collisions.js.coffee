@@ -177,11 +177,6 @@ collisions = (->
     noColl = {t: collisions.NONE}
     r = circle.radius
     
-    # debug shit
-    # console.log "start: #{startPos.inspect()} end: #{endPos.inspect()}"
-    #     console.log "line start ang: #{lineStartAng} lineEndAng: #{lineEndAng}"
-    #     console.log "n1: #{n1.inspect()}"
-    #     console.log "n2: #{n2.inspect()}"
     # NOTE:
     # Equation can't be solved algebraically - an approximation method must be used
     # Save time by checking whether it's possible for the 2 objects to collide at all
@@ -203,7 +198,74 @@ collisions = (->
     # otherwise, check for intersection with line endpoints
     # TODO:
     noColl
+  
+  # Detect collision between rotating line and stationary line
+  # @param {Number} theta0 angle of starting position of line from the vertical
+  # @param {Number} omega angular velocity of rotating line
+  # @param {Line} line1 rotating line object
+  # @param {Line} line2 stationary line object 
+  # @param {Boolean} segment flag: true=checking for endpoints, false=continuous wall
+  angularCollisionLineStationaryLine = (theta0, omega, rline, sline, segment) ->
+    n = sline.vec.normal().toUnitVector()
+    d = sline.pos.dot(n)
+    if d < 0
+      d = -d
+      n = n.x(-1)
+    # so n is the normal vector directed towards the point where the perp. from 
+    # the rotating line position meets the stationary line (N)
+    return collisions.NONE if d > rline.length # too far from wall
     
+    endpt = null
+    # if checking for endpoints, see if they are relevant
+    if segment
+      pn = n.x(d) # vector rotation origin to N
+      dd = length*length - d*d # squared length TD
+      if omega > 0
+        if !Vector.isClockwise(sline.pos, sline.vec)
+          endpt = sline.pos.dup() #  stationary line point
+        else
+          endpt = sline.pos.add(sline.vec) # endpoint of stationary line
+      else
+        if !Vector.isClockwise(sline.pos, sline.vec)
+          endpt = sline.pos.add(sline.vec)
+        else
+          endpt = sline.pos.dup()
+  
+      d1 = Math.pow(endpt.subtract(pn).mag(), 2)
+      if d1 < dd # there is a potential collision with the endpoint
+        # a is the angle of collision with the endpoint
+        a = Math.acos(d / endpt.mag()) * k
+        if !Vector.isClockwise(endpt, pn.subtract(endpt))
+          a = -a
+      else
+        a = Math.acos(d)
+        if omega > 0
+          a *= -1
+        # check if this collision occurs outside the line segment
+        ap = pn.add(Math.abs(a) * Math.sqrt(dd) / a)
+        # note that abs(a)/a is 1 if a>0, -1 otherwise
+        k = ap.subtract(sline.pos).mag() / sline.vec.mag()
+        return collisions.NONE if k > 1 || k < 0
+    # end if segment
+    else
+      # check for collision with an infinite wall
+      a = Math.acos(d)
+      if omega > 0
+        a = -a
+    
+    tn = n.angleOf()
+    #t = rangeAngle(, 1) / omega
+    # assuming rangeangle = diff. b/w max & min in range of values
+    someangle = tn - theta0 + a
+    if someangle > 1
+      t = (someangle - 1) / omega
+    else
+      t = (1 - someangle) / omega
+    
+    return collisions.NONE if t <= 0 || t > 1
+    t
+    
+        
   isImpendingCollision = (ts) ->
     0 < ts <= 1
   
@@ -414,13 +476,14 @@ collisions = (->
     (intersections % 2) == 1
 
   # Return public functions
-  {checkCollisions, 
+  {checkCollisions,
   detectCollision, 
   isImpendingCollision,
   resolveCollision,
   resolveInelasticCollisionFixed,
   angularCollisionLineCircle,
   angularCollisionLineCircle2,
+  angularCollisionLineStationaryLine,
   pointInTriangle, 
   pointInPolygon}
 )()

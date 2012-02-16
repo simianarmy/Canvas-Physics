@@ -70,19 +70,43 @@ Vector::componentVector = (direction) ->
 # @returns {Vector}
 Vector::divide = (val) ->
   @map (x) -> x / val
-  
+
+### Functions for consistent angular measurements in 2D space ###
+# 
+# Angular calculations must use the same concept of direction of y-axis 
+# in the 2-D space (y measured upwards in cartesian coordinates, 
+# but measured downwards in HTML5 Canvas, GL, etc.)
+#
+# We have to ensure that it ties in correctly with our measure for 
+# positive angular displacement, which is ensured with the general-purpose 
+# functions: 
+# clockwiseNormal(), unitVector() and angleOf()
+
 # clockwiseNormal
 #
-# perpendicular vector, by convention
-# Note: Identical to normal(), but used in specific circumstances
-# @returns {Vector}
+# perpendicular vector, by convention.
+#
+# @return {Vector}
 Vector::clockwiseNormal = ->
-  @normal()
-  
+  $V([-@elements[1], @elements[0], 0])
+
+# unitVector
+#
+# To be used for consistent angular calculations based on direction of y-axis.
+# see: unitVector, isClockwise, and clockwiseNormal
+Vector::unitVector = (ang) ->
+  $V([Math.sin(ang), Math.cos(ang), 0])
+
+# angleOf
+#
+# To be used for consistent angular calculations based on direction of y-axis.
+# see: unitVector, isClockwise, and clockwiseNormal
+Vector::angleOf = ->
+  Math.atan(@elements[0], @elements[1])
+
 # moment
 # 
 # The moment of the vector about the origin for a particle at point p
 # @returns {Number}
 Vector::moment = (p) ->
   @clockwiseNormal().dot(p)
-
