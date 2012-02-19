@@ -203,9 +203,8 @@ collisions = (->
   # @param {Boolean} segment flag: true=checking for endpoints, false=continuous wall
   
   angularCollisionLineStationaryLine = (theta0, omega, rline, sline, segment) ->
-    # Treat rline position as origin
-    #spos = sline.pos.subtract(rline.pos)
-    spos = sline.pos
+    # Make rotating line pos the origin
+    spos = sline.pos.subtract(rline.pos)
     l = rline.length
     n = sline.vec.normal().toUnitVector()
     d = spos.dot(n)
@@ -215,7 +214,9 @@ collisions = (->
       n = n.x(-1)
     # so n is the normal vector directed towards the point where the perp. from 
     # the rotating line position meets the stationary line (N)
-    return collisions.NONE if d > rline.length # too far from wall
+    if d > rline.length # too far from wall
+      console.log("#{d} > #{rline.length} - too far from wall!")
+      return collisions.NONE
     
     endpt = null
     # if checking for endpoints, see if they are relevant

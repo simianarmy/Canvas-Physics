@@ -118,15 +118,13 @@ $(document).ready ->
         objects.push ball
       when 3, 4
         # other object is line
-        rot = startingAngle-30
-        len = lineLength*1.5
-        vec = Vector.unitVector(Math.degreesToRadians(rot)).x(-len)
-        lpos = line.pos.add($V([250, 150, 0]))
+        lpos = line.pos.add($V([220, 100, 0]))
+        vec = $V([-75, -100, 0])
         
         line2 = new Line(lpos.e(1), lpos.e(2), vec.e(1), vec.e(2), 0, {
-          color: 'black',
-          length: len
+          color: 'red',
         })
+        line2.length = line2.vec.mag()
         objects.push line2
     
     rec = new Rectangle(canvas.width/2, canvas.height/2, 0, 40, 40, {
@@ -186,7 +184,7 @@ $(document).ready ->
         Math.degreesToRadians(90-line.rotation),
         angVel, 
         line, line2, 0)
-      paused = collisions.isImpendingCollision(collisionIn)
+      #paused = collisions.isImpendingCollision(collisionIn)
       
     paused ||= collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
   
