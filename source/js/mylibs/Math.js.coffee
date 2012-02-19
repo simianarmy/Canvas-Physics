@@ -27,14 +27,15 @@ Math.getRandomInt = (min, max) ->
 Math.degreesToRadians = (degrees) ->
   degrees * Math.PI / 180
 
-# some shit from the math book not referenced anywhere
-# Assuming it means calculate value of angle in some new range?
-Math.rangeAngle = (angle, mult) ->
+# Keeps angle within range 0, +2pi
+# @param {Number} angle radians
+# @param {Number} mult multiple of PI (default: 2)
+Math.radRangeAngle = (angle, mult=2) ->
   inc = mult * Math.PI
-  while angle < 0.0
-    angle += inc
-
   while angle >= inc
     angle -= inc
+    
+  while angle < 0
+    angle += inc
   
   angle

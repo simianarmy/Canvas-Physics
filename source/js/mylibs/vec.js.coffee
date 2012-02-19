@@ -105,7 +105,7 @@ Vector::clockwiseNormal = ->
 # To be used for consistent angular calculations based on direction of y-axis.
 # see: unitVector, isClockwise, and clockwiseNormal
 Vector::angleOf = ->
-  Math.atan(@elements[0], @elements[1])
+  Math.atan2(@elements[0], @elements[1])
 
 # moment
 # 

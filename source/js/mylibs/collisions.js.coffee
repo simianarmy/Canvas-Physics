@@ -257,14 +257,20 @@ collisions = (->
           
     tn = n.angleOf()
     someangle = tn - theta0 + a
-    ranged = Math.rangeAngle(someangle, 1)
-    
+    ### BIG TODO ###
+    # Find out wth rangeAngle should do
+    ranged = Math.radRangeAngle(someangle, 1)
     t = ranged / omega
+    
+    console.log("n: #{n.inspect()}")
+    console.log("angle of n: #{tn}")
+    console.log("theta0: #{theta0}")
+    console.log("alpha: #{a}")
     console.log("total angle: #{someangle}")
     console.log("ranged: #{ranged}")
-    console.log("theta0: #{theta0}")
+    console.log("collision if ranged <= #{omega}")    
     console.log("t: #{t}")
-    
+
     return collisions.NONE if t <= 0 || t > 1
     t
     
