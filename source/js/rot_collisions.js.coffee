@@ -62,7 +62,7 @@ $(document).ready ->
               canvas.translate obj.x(), obj.y()
               canvas.rotate(Math.degreesToRadians(obj.rotation))
               canvas.translate(-obj.x(), -obj.y())
-              canvas.drawLine(obj)
+            canvas.drawLine(obj)
 
         when 'Circle'
           canvas.inContext ->
@@ -118,10 +118,14 @@ $(document).ready ->
         objects.push ball
       when 3, 4
         # other object is line
-        line2 = new Line(canvas.width/2+80, canvas.height/2-50, lineLength*1.5, 0, {
+        rot = startingAngle-30
+        len = lineLength*1.5
+        vec = Vector.unitVector(Math.degreesToRadians(rot)).x(-len)
+        lpos = line.pos.add($V([250, 150, 0]))
+        
+        line2 = new Line(lpos.e(1), lpos.e(2), vec.e(1), vec.e(2), 0, {
           color: 'black',
-          rotation: startingAngle-24,
-          length: lineLength*1.5
+          length: len
         })
         objects.push line2
     
@@ -177,14 +181,14 @@ $(document).ready ->
         angVel, lineLength, 
         ball.radius, ballDistance, ballAngle, 
         perpDist)
-      paused = collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
     else # another line
       collisionIn = collisions.angularCollisionLineStationaryLine(
         Math.degreesToRadians(90-line.rotation),
         angVel, 
         line, line2, 0)
-        
-    paused = collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
+      paused = collisions.isImpendingCollision(collisionIn)
+      
+    paused ||= collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
   
   # animate all objects
   update = ->

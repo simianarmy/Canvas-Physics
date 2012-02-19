@@ -7,14 +7,7 @@
 
 # Static functions
 
-# isClockwise
-# 
-# Determines if object starts at p with velocity v is moving clockwise about the origin
-# @returns {Boolean}
-Vector.isClockwise = (v, p) ->
-  n = p.clockwiseNormal()
-  v.component(n) > 0
-
+# NB: MAY CONFLICT WITH unitVector() function!
 # directionVector
 #
 # @param {Number} angle angle in radians or degrees
@@ -80,7 +73,24 @@ Vector::divide = (val) ->
 # We have to ensure that it ties in correctly with our measure for 
 # positive angular displacement, which is ensured with the general-purpose 
 # functions: 
-# clockwiseNormal(), unitVector() and angleOf()
+# isClockwise(), clockwiseNormal(), Vector.unitVector() and angleOf()
+
+# isClockwise
+# 
+# Determines if object starts at p with velocity v is moving clockwise about the origin
+# @param {Vector} v velocity
+# @param {Vector} p point
+# @returns {Boolean}
+Vector.isClockwise = (v, p) ->
+  n = p.clockwiseNormal()
+  v.component(n) > 0
+
+# unitVector
+#
+# @param {Number} ang angle of rotation (radians) from x-axis
+# @return {Vector} representing the specfied rotation
+Vector.unitVector = (ang) ->
+  $V([Math.sin(ang), Math.cos(ang), 0])
 
 # clockwiseNormal
 #
@@ -89,13 +99,6 @@ Vector::divide = (val) ->
 # @return {Vector}
 Vector::clockwiseNormal = ->
   $V([-@elements[1], @elements[0], 0])
-
-# unitVector
-#
-# To be used for consistent angular calculations based on direction of y-axis.
-# see: unitVector, isClockwise, and clockwiseNormal
-Vector::unitVector = (ang) ->
-  $V([Math.sin(ang), Math.cos(ang), 0])
 
 # angleOf
 #

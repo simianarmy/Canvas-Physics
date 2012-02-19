@@ -127,11 +127,7 @@ collisions = (->
       alpha = -alpha
       k = -1
     
-    pi2 = Math.PI * 2
-    while alpha < 0
-      alpha += pi2
-    while alpha > pi2
-      alpha -= pi2
+    alpha = Math.rangeAngle(alpha, 2)
     
     # check if there is a possible collision.
     # this means any collision in t > 1 will not be considered.
@@ -205,9 +201,15 @@ collisions = (->
   # @param {Line} line1 rotating line object
   # @param {Line} line2 stationary line object 
   # @param {Boolean} segment flag: true=checking for endpoints, false=continuous wall
+  
   angularCollisionLineStationaryLine = (theta0, omega, rline, sline, segment) ->
+    # Treat rline position as origin
+    #spos = sline.pos.subtract(rline.pos)
+    spos = sline.pos
+    l = rline.length
     n = sline.vec.normal().toUnitVector()
-    d = sline.pos.dot(n)
+    d = spos.dot(n)
+    
     if d < 0
       d = -d
       n = n.x(-1)
@@ -221,15 +223,15 @@ collisions = (->
       pn = n.x(d) # vector rotation origin to N
       dd = length*length - d*d # squared length TD
       if omega > 0
-        if !Vector.isClockwise(sline.pos, sline.vec)
-          endpt = sline.pos.dup() #  stationary line point
+        if !Vector.isClockwise(spos, sline.vec)
+          endpt = spos.dup() #  stationary line point
         else
-          endpt = sline.pos.add(sline.vec) # endpoint of stationary line
+          endpt = spos.add(sline.vec) # endpoint of stationary line
       else
-        if !Vector.isClockwise(sline.pos, sline.vec)
-          endpt = sline.pos.add(sline.vec)
+        if !Vector.isClockwise(spos, sline.vec)
+          endpt = spos.add(sline.vec)
         else
-          endpt = sline.pos.dup()
+          endpt = spos.dup()
   
       d1 = Math.pow(endpt.subtract(pn).mag(), 2)
       if d1 < dd # there is a potential collision with the endpoint
@@ -238,29 +240,30 @@ collisions = (->
         if !Vector.isClockwise(endpt, pn.subtract(endpt))
           a = -a
       else
-        a = Math.acos(d)
+        a = Math.acos(d / l)
         if omega > 0
           a *= -1
         # check if this collision occurs outside the line segment
         ap = pn.add(Math.abs(a) * Math.sqrt(dd) / a)
         # note that abs(a)/a is 1 if a>0, -1 otherwise
-        k = ap.subtract(sline.pos).mag() / sline.vec.mag()
+        k = ap.subtract(spos).mag() / sline.vec.mag()
         return collisions.NONE if k > 1 || k < 0
     # end if segment
     else
       # check for collision with an infinite wall
-      a = Math.acos(d)
+      a = Math.acos(d / l)
       if omega > 0
         a = -a
-    
+          
     tn = n.angleOf()
-    #t = rangeAngle(, 1) / omega
-    # assuming rangeangle = diff. b/w max & min in range of values
     someangle = tn - theta0 + a
-    if someangle > 1
-      t = (someangle - 1) / omega
-    else
-      t = (1 - someangle) / omega
+    ranged = Math.rangeAngle(someangle, 1)
+    
+    t = ranged / omega
+    console.log("total angle: #{someangle}")
+    console.log("ranged: #{ranged}")
+    console.log("theta0: #{theta0}")
+    console.log("t: #{t}")
     
     return collisions.NONE if t <= 0 || t > 1
     t
