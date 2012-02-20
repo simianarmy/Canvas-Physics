@@ -5,6 +5,7 @@
 #= require ./plugins
 #= require mylibs/vec
 #= require mylibs/Math
+#= require mylibs/Array
 #= require mylibs/Line
 #= require mylibs/Circle
 #= require mylibs/Rectangle
@@ -117,11 +118,10 @@ $(document).ready ->
         ballAngle = Math.degreesToRadians 90
         objects.push ball
       when 3, 4
-        # other object is line
-        lpos = line.pos.add($V([220, 100, 0]))
-        vec = $V([-75, -100, 0])
+        # other object is line.  need vector for direction, not rotation
+        vec = $V([80, 200, 0])
         
-        line2 = new Line(lpos.e(1), lpos.e(2), vec.e(1), vec.e(2), 0, {
+        line2 = new Line(line.x()+105, line.y()-50, vec.e(1), vec.e(2), 0, {
           color: 'red',
         })
         line2.length = line2.vec.mag()
@@ -180,11 +180,25 @@ $(document).ready ->
         ball.radius, ballDistance, ballAngle, 
         perpDist)
     else # another line
-      collisionIn = collisions.angularCollisionLineStationaryLine(
+      possible = []
+      c1 = collisions.angularCollisionLineStationaryLine(
         Math.degreesToRadians(90-line.rotation),
         angVel, 
-        line, line2, 0)
-      #paused = collisions.isImpendingCollision(collisionIn)
+        line, line2, false)
+      c2 = collisions.angularCollisionLineStationaryLine(
+          Math.degreesToRadians(90-line.rotation),
+          angVel, 
+          line, line2, true)
+      
+      if collisions.isImpendingCollision(c1)
+        console.log("collision on flat")
+        possible.push(c1) 
+      if collisions.isImpendingCollision(c2)
+        console.log("collsion on endpoint")
+        possible.push(c2) 
+        
+      if (possible.length > 0)
+        collisionIn = possible.min()
       
     paused ||= collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
   

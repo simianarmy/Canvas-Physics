@@ -77,11 +77,11 @@ Vector::divide = (val) ->
 
 # isClockwise
 # 
-# Determines if object starts at p with velocity v is moving clockwise about the origin
-# @param {Vector} v velocity
+# Determines if point p with vector v has direction clockwise about the origin
 # @param {Vector} p point
+# @param {Vector} v vec
 # @returns {Boolean}
-Vector.isClockwise = (v, p) ->
+Vector.isClockwise = (p, v) ->
   n = p.clockwiseNormal()
   v.component(n) > 0
 

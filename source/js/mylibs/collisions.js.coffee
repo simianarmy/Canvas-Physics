@@ -221,8 +221,8 @@ collisions = (->
     endpt = null
     # if checking for endpoints, see if they are relevant
     if segment
-      pn = n.x(d) # vector rotation origin to N
-      dd = length*length - d*d # squared length TD
+      pn = n.x(d) # vector = rotating line origin P to N
+      dd = l*l - d*d # squared length TD
       if omega > 0
         if !Vector.isClockwise(spos, sline.vec)
           endpt = spos.dup() #  stationary line point
@@ -233,19 +233,22 @@ collisions = (->
           endpt = spos.add(sline.vec)
         else
           endpt = spos.dup()
-  
+
       d1 = Math.pow(endpt.subtract(pn).mag(), 2)
       if d1 < dd # there is a potential collision with the endpoint
         # a is the angle of collision with the endpoint
-        a = Math.acos(d / endpt.mag()) * k
+        a = Math.acos(d / endpt.mag())
         if !Vector.isClockwise(endpt, pn.subtract(endpt))
           a = -a
       else
         a = Math.acos(d / l)
         if omega > 0
-          a *= -1
+          a = -a
         # check if this collision occurs outside the line segment
-        ap = pn.add(Math.abs(a) * Math.sqrt(dd) / a)
+        # ADDING SCALAR TO VECTOR??? WTF DUDE??
+        # BOOK CODE: pn + Math.abs(a) * Math.sqrt(dd) / a
+        # TRYING MULTIPLY INSTEAD...SHEESH
+        ap = pn.x(Math.abs(a) * Math.sqrt(dd) / a)
         # note that abs(a)/a is 1 if a>0, -1 otherwise
         k = ap.subtract(spos).mag() / sline.vec.mag()
         return collisions.NONE if k > 1 || k < 0
@@ -273,6 +276,31 @@ collisions = (->
     console.log("t: #{t}")
 
     return collisions.NONE if t <= 0 || t > 1
+    
+    # If collision on flat, we must make sure the collision is with the line
+    if !segment
+      # We need vector AT!
+      # Get point PT
+      pt = Vector.unitVector(Math.radRangeAngle(a+tn)).x(rline.length)
+      console.log("pt: #{pt.inspect()}")
+      oga = spos.dup()
+      vec = sline.vec.dup()
+      if omega > 0
+        if Vector.isClockwise(spos, sline.vec)
+          oga = spos.add(sline.vec)
+          vec = vec.x(-1)
+        at = pt.subtract(oga)
+        atv = at.dot(vec)
+      else
+        # TODO: FIGURE THIS OUT TOO!
+      console.log("at: #{at.inspect()}")
+      console.log("atv: #{atv}")
+      vmag2 = Math.pow(sline.vec.mag(), 2)
+      console.log("|v|2 = #{vmag2}")
+      if atv < 0 || atv > vmag2
+        console.log("collision not on line!")
+        return collisions.NONE 
+      
     t
     
         
