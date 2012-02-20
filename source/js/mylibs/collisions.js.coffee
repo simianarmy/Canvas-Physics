@@ -127,7 +127,7 @@ collisions = (->
       alpha = -alpha
       k = -1
     
-    alpha = Math.rangeAngle(alpha, 2)
+    alpha = Math.radRangeAngle(alpha, 2)
     
     # check if there is a possible collision.
     # this means any collision in t > 1 will not be considered.

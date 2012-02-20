@@ -173,6 +173,7 @@ $(document).ready ->
       # BUG: False positives at omega > 16!??
       res = collisions.angularCollisionLineCircle2 line, ball, t
       collisionIn = res.t
+      paused = collisionIn == 0
     else if ball
       collisionIn = collisions.angularCollisionLineCircle(
         Math.degreesToRadians(90-line.rotation), 
