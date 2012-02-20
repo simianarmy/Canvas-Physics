@@ -17,6 +17,8 @@ class Shape
     @rotation ?= 0
     @angSpeed ?= 0
     @rotDirection ?= 1
+    @fixedLinear ?= false
+    @fixedAngular ?= true
     
   # move object position by vector amount
   # @param {Vector} vec vector of movement
@@ -27,8 +29,12 @@ class Shape
   # move object position using ahead by some timestep
   # @param {Number} t timestep
   moveByTime: (t) ->
-    @pos = @locationAfter(t)
-  
+    if !@fixedLinear
+      @pos = @locationAfter(t)
+      
+    if !@fixedAngular
+      @setRotation(@rotation + @angularVelocity() * t)
+      
   # move object to a position
   # @param {Vector} newPos new position
   moveTo: (newPos) ->
@@ -38,11 +44,25 @@ class Shape
   # @param {Number} t timestep
   # @return {Vector} new position
   locationAfter: (t) ->
-    @pos.add(@velocity.x(t))
-    
+    if !@fixedLinear
+      @pos.add(@velocity.x(t))
+    else
+      @pos
+  
   x: -> @pos.e(1)
   y: -> @pos.e(2)
   z: -> @pos.e(3)
+  
+  isRotating: ->
+    @angSpeed > 0
+    
+  # Sets shape's angle of rotation
+  # @param {Number} rot (degrees)
+  # @param {String} unit d|r default: (d)egrees
+  setRotation: (rot, unit='d') ->
+    if unit == 'd'
+      rot = Math.degreesToRadians rot
+    @rotation = Math.radRangeAngle(rot, 0) * 180 / Math.PI
   
   angularDirection: -> @rotDirection
   

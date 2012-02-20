@@ -112,9 +112,6 @@ collisions = (->
   # @param {Number} alpha angle of vertical and line to ball center 
   # @param {Number} perpDist perpendicular distance of line from center of rotation
   # @return {Number} NONE or EMBEDDED or time to collision (if < 1)
-  # TODO: Support for cases where the rotating line is offset from its rotating point.
-  #   requires mystery value x for final equation: 
-  #   (alpha - theta0 - k * Math.asin((r - x) / d)) / omega
   angularCollisionLineCircle = (theta0, omega, l, r, d, alpha, perpDist) ->
     return collisison.NONE if d > l + r
     return collisions.EMBEDDED if d < r
@@ -127,7 +124,7 @@ collisions = (->
       alpha = -alpha
       k = -1
     
-    alpha = Math.radRangeAngle(alpha, 2)
+    alpha = Math.radRangeAngle(alpha, 0)
     
     # check if there is a possible collision.
     # this means any collision in t > 1 will not be considered.
@@ -156,9 +153,13 @@ collisions = (->
     startPos = circle.pos.subtract(line.pos)
     endPos = circle.locationAfter(ts).subtract(line.locationAfter(ts))
     
-    lineStartAng = Math.degreesToRadians(line.rotation)
+    # FIXME: HAVING TO USE 90 DEGREE OFFSET SEEMS WRONG HERE!!
+    lineStartAng = Math.degreesToRadians(90-line.rotation)
     lineAngDisp = line.angularVelocity('r') * ts
     lineEndAng = lineStartAng + lineAngDisp
+
+    console.log("ball pos: #{startPos.inspect()} - #{endPos.inspect()}")
+    console.log("line angles: #{lineStartAng} - #{lineEndAng}")
     
     n1 = Vector.directionVector(lineStartAng + Math.PI/2)
     n2 = Vector.directionVector(lineEndAng + Math.PI/2)
@@ -172,7 +173,7 @@ collisions = (->
 
     noColl = {t: collisions.NONE}
     r = circle.radius
-    
+
     # NOTE:
     # Equation can't be solved algebraically - an approximation method must be used
     # Save time by checking whether it's possible for the 2 objects to collide at all
@@ -188,7 +189,9 @@ collisions = (->
         return {t: 0,
         normal: n1.x(-1),
         moment1: $V([0, 0, 0]),
-        moment2: startPos.subtract(n1.x(r))
+        moment2: startPos.subtract(n1.x(r)),
+        ref1: circle,
+        ref2: line
         }
 
     # otherwise, check for intersection with line endpoints
@@ -261,9 +264,10 @@ collisions = (->
           
     tn = n.angleOf()
     someangle = tn - theta0 + a
-    ### BIG TODO ###
-    # Find out wth rangeAngle should do
-    ranged = Math.radRangeAngle(someangle, 1)
+
+    # Move angle to range [1, 2pi) doesn't work, need to use range [0, 2pi)..
+    # what about -pi,pi??
+    ranged = Math.radRangeAngle(someangle, 0)
     t = ranged / omega
     
     console.log("n: #{n.inspect()}")

@@ -27,15 +27,15 @@ Math.getRandomInt = (min, max) ->
 Math.degreesToRadians = (degrees) ->
   degrees * Math.PI / 180
 
-# Keeps angle within range -2pi, +2pi
+# Constrains angle within range range, +2pi
 # @param {Number} angle radians
-# @param {Number} mult multiple of PI (default: 2)
-Math.radRangeAngle = (angle, mult=2) ->
-  inc = mult * Math.PI
-  while angle >= inc
+# @param {Number} range minimum (default: 0)
+# @return {Number} the angle constrained to [range,range+2pi)
+Math.radRangeAngle = (angle, range=0) ->
+  inc = 2 * Math.PI
+  while angle <= range
+    angle += inc
+  while angle > range+inc
     angle -= inc
     
-  while angle < -inc
-    angle += inc
-  
   angle

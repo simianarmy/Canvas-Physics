@@ -42,6 +42,21 @@ Vector::mag = ->
 Vector::normal = ->
   $V([-@elements[1], @elements[0], 0])
   
+# rotateClockwise
+# @param {Number} angle amount to rotate vector in radians
+Vector::rotateClockwise = (angle) ->
+  return this if angle == 0
+  x = @e(1)
+  y = @e(2)
+  l = Math.sqrt(x*x + y*y)
+  return this if l == 0
+  
+  # set newangle to angle + atan2(y,x)
+  newangle = angle + Math.atan2(y, x)
+  x1 = l * Math.cos(newangle)
+  y1 = l * Math.sin(newangle)
+  $V([x1, y1, 0])
+  
 # component
 #
 # @returns {Number} component of vector in a new basis

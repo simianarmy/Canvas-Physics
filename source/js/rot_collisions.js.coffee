@@ -27,7 +27,7 @@ $(document).ready ->
   ballMoving = false
   rotationOffset = false
   angle = 0
-  startingAngle = startingTheta = 0
+  startingAngle  = 0
   angVel = ballDistance = ballAngle = perpDist = collisionIn = 0
     
   drawInfo = (text) ->
@@ -58,12 +58,7 @@ $(document).ready ->
       switch obj.name
         when 'Line'
           canvas.drawCircleAt(obj.x(), obj.y(), 1, {color: 'black'})
-          canvas.inContext ->
-            if obj.rotation != 0
-              canvas.translate obj.x(), obj.y()
-              canvas.rotate(Math.degreesToRadians(obj.rotation))
-              canvas.translate(-obj.x(), -obj.y())
-            canvas.drawLine(obj)
+          canvas.drawLine(obj)
 
         when 'Circle'
           canvas.inContext ->
@@ -88,13 +83,12 @@ $(document).ready ->
     rotationOffset = $("input[name=rotationOffset]:checked").val() == "1"
     $('#sangle').html(startingAngle)
     $('#angvel').html(angularVel)
-    startingTheta = 90 - startingAngle
     objects = []
     ball = null
     line2 = null
     
     # draw rotating line
-    line = new Line(canvas.width/2, canvas.height/2, lineLength, 0, {
+    line = new Line(canvas.width/2, canvas.height/2, 0, 0, {
       color: 'black',
       rotation: startingAngle,
       length: lineLength
@@ -119,12 +113,16 @@ $(document).ready ->
         objects.push ball
       when 3, 4
         # other object is line.  need vector for direction, not rotation
-        vec = $V([80, 200, 0])
+        line2Angle = $("input[name=s2Angle]").val() || 75
+        line2Length = 250
         
-        line2 = new Line(line.x()+105, line.y()-50, vec.e(1), vec.e(2), 0, {
-          color: 'red',
+        line2 = new Line(line.x()+105, line.y()-50, 0, 0, {
+          rotation: line2Angle,
+          length: line2Length
         })
-        line2.length = line2.vec.mag()
+        if otherObject == 4
+          line2.setAngularVelocity(-angularVel)
+          
         objects.push line2
     
     rec = new Rectangle(canvas.width/2, canvas.height/2, 0, 40, 40, {
@@ -138,11 +136,10 @@ $(document).ready ->
       perpDist = rec.height / 2
       
     line.setAngularVelocity(angularVel)
-    angVel = Math.degreesToRadians(line.angularVelocity())
+    angVel = line.angularVelocity('r')
     lineToCenterDist = line.pos.subtract(rec.pos).mag()
     
     clearInfo()
-    drawInfo("Theta0: #{startingTheta}")
     drawInfo("Angle: #{line.rotation}")
     drawInfo("Line length: #{lineLength}")
     drawInfo("rotation axis: #{line.pos.inspect()}")
@@ -151,57 +148,63 @@ $(document).ready ->
     drawInfo("d to center: #{lineToCenterDist}")
     
   updateObjects = (t) ->
-    # update the line's rotation
-    omega = line.angularVelocity() * t
-    rot = line.rotation - omega
-    if Math.abs(rot) >= 360
-      rot = 0
-    
+    # update the line's rotation and others
+    line.moveByTime(t)
+    rec.rotation = line.rotation
     ball.moveByTime(t) if ball
-    line.rotation = rot
-    rec.rotation = rot
+    line2.moveByTime(t) if line2
+    
     # if rotating around a point
     if rotationOffset
       # get new origin of rotated rectangle and move line to it
       o = rec.cartesianOrigin()
-      o2 = o.to2D().rotate(Math.degreesToRadians(rot), rec.pos.to2D())      
+      # Use negative rotation to force clockwise rotation direction
+      o2 = o.to2D().rotate(Math.degreesToRadians(-rec.rotation), rec.pos.to2D())      
       line.moveTo $V([o2.e(1), o2.e(2), 0])
     
   checkCollisions = (t) ->
+    # Pick earliest time to collision from list
+    firstCollision = (times...) ->
+      (t for t in times when collisions.isImpendingCollision(t)).min()
+    
     # Use different detection methods depending on ball movement
     if ballMoving
-      # BUG: False positives at omega > 16!??
       res = collisions.angularCollisionLineCircle2 line, ball, t
       collisionIn = res.t
       paused = collisionIn == 0
     else if ball
       collisionIn = collisions.angularCollisionLineCircle(
-        Math.degreesToRadians(90-line.rotation), 
-        angVel, lineLength, 
+        Math.degreesToRadians(line.rotation), 
+        angVel, line.length, 
         ball.radius, ballDistance, ballAngle, 
         perpDist)
     else # another line
       possible = []
-      c1 = collisions.angularCollisionLineStationaryLine(
-        Math.degreesToRadians(90-line.rotation),
-        angVel, 
-        line, line2, false)
-      c2 = collisions.angularCollisionLineStationaryLine(
-          Math.degreesToRadians(90-line.rotation),
+      if line2.isRotating()
+        # check using endpoints of both lines
+        c1 = collisions.angularCollisionLineStationaryLine(
+            Math.degreesToRadians(line.rotation),
+            angVel, 
+            line, line2, true)
+        c2 = collisions.angularCollisionLineStationaryLine(
+            Math.degreesToRadians(line2.rotation),
+            line2.angularVelocity(), 
+            line2, line, true)
+      else # colliding with stationary line
+        # check for collision on flat
+        c1 = collisions.angularCollisionLineStationaryLine(
+          Math.degreesToRadians(line.rotation),
           angVel, 
-          line, line2, true)
-      
-      if collisions.isImpendingCollision(c1)
-        console.log("collision on flat")
-        possible.push(c1) 
-      if collisions.isImpendingCollision(c2)
-        console.log("collsion on endpoint")
-        possible.push(c2) 
+          line, line2, false)
+        # check for collision with endpoints
+        c2 = collisions.angularCollisionLineStationaryLine(
+            Math.degreesToRadians(line.rotation),
+            angVel, 
+            line, line2, true)
         
-      if (possible.length > 0)
-        collisionIn = possible.min()
+      collisionIn = firstCollision(c1, c2) || collisions.NONE
       
-    paused ||= collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.02)
+    paused ||= collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.04)
   
   # animate all objects
   update = ->
