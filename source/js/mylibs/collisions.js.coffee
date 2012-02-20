@@ -289,14 +289,14 @@ collisions = (->
         if Vector.isClockwise(spos, sline.vec)
           oga = spos.add(sline.vec)
           vec = vec.x(-1)
-        at = pt.subtract(oga)
-        atv = at.dot(vec)
       else
-        # TODO: FIGURE THIS OUT TOO!
-      console.log("at: #{at.inspect()}")
-      console.log("atv: #{atv}")
+        # TODO: FIGURE OUT FOR omega <= 0
+      
+      at = pt.subtract(oga)
+      atv = at.dot(vec)
       vmag2 = Math.pow(sline.vec.mag(), 2)
-      console.log("|v|2 = #{vmag2}")
+      console.log("at: #{at.inspect()}, atv: #{atv}, |v|sq = #{vmag2}")
+
       if atv < 0 || atv > vmag2
         console.log("collision not on line!")
         return collisions.NONE 
