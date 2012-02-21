@@ -17,7 +17,6 @@ $(document).ready ->
   canvas.setOrigin('bottomleft')
   elapsed = lastTime = 0
   
-  lineLength = 200
   line = line2 = null
   ball = null
   rec = null
@@ -26,6 +25,7 @@ $(document).ready ->
   paused = true
   ballMoving = false
   rotationOffset = false
+  lineLength = 0
   angle = 0
   startingAngle  = 0
   angVel = ballDistance = ballAngle = perpDist = collisionIn = 0
@@ -86,6 +86,7 @@ $(document).ready ->
     objects = []
     ball = null
     line2 = null
+    lineLength = 150
     
     # draw rotating line
     line = new Line(canvas.width/2, canvas.height/2, 0, 0, {
@@ -113,10 +114,10 @@ $(document).ready ->
         objects.push ball
       when 3, 4
         # other object is line.  need vector for direction, not rotation
-        line2Angle = $("input[name=s2Angle]").val() || 75
+        line2Angle = $("input[name=s2Angle]").val() || 350
         line2Length = 250
         
-        line2 = new Line(line.x()+105, line.y()-50, 0, 0, {
+        line2 = new Line(line.x()+145, line.y()-50, 0, 0, {
           rotation: line2Angle,
           length: line2Length
         })
@@ -169,7 +170,7 @@ $(document).ready ->
     
     # Use different detection methods depending on ball movement
     if ballMoving
-      res = collisions.angularCollisionLineCircle2 line, ball, t
+      res = collisions.angularCollisionLineCircle2(line, ball, t)
       collisionIn = res.t
       paused = collisionIn == 0
     else if ball
@@ -179,17 +180,11 @@ $(document).ready ->
         ball.radius, ballDistance, ballAngle, 
         perpDist)
     else # another line
-      possible = []
       if line2.isRotating()
-        # check using endpoints of both lines
-        c1 = collisions.angularCollisionLineStationaryLine(
-            Math.degreesToRadians(line.rotation),
-            angVel, 
-            line, line2, true)
-        c2 = collisions.angularCollisionLineStationaryLine(
-            Math.degreesToRadians(line2.rotation),
-            line2.angularVelocity(), 
-            line2, line, true)
+        # check using triangle test
+        res = collisions.angularCollisionLineLine(line, line2, t)
+        collisionIn = res.t
+        paused = collisionIn == 0
       else # colliding with stationary line
         # check for collision on flat
         c1 = collisions.angularCollisionLineStationaryLine(
@@ -201,8 +196,7 @@ $(document).ready ->
             Math.degreesToRadians(line.rotation),
             angVel, 
             line, line2, true)
-        
-      collisionIn = firstCollision(c1, c2) || collisions.NONE
+        collisionIn = firstCollision(c1, c2) || collisions.NONE
       
     paused ||= collisions.isImpendingCollision(collisionIn) && (Math.abs(collisionIn) < 0.04)
   

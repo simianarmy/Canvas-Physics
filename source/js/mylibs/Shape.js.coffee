@@ -61,8 +61,11 @@ class Shape
   # @param {String} unit d|r default: (d)egrees
   setRotation: (rot, unit='d') ->
     if unit == 'd'
-      rot = Math.degreesToRadians rot
+      rot = Math.degreesToRadians(rot)
     @rotation = Math.radRangeAngle(rot, 0) * 180 / Math.PI
+  
+  radRotation: ->
+    Math.degreesToRadians @rotation
   
   angularDirection: -> @rotDirection
   

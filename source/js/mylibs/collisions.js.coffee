@@ -204,7 +204,7 @@ collisions = (->
   # @param {Line} line1 rotating line object
   # @param {Line} line2 stationary line object 
   # @param {Boolean} segment flag: true=checking for endpoints, false=continuous wall
-  
+  # @return {Number} time to collision or NONE
   angularCollisionLineStationaryLine = (theta0, omega, rline, sline, segment) ->
     # Make rotating line pos the origin
     spos = sline.pos.subtract(rline.pos)
@@ -307,7 +307,52 @@ collisions = (->
       
     t
     
+  # Detect collision between 2 rotating lines
+  # @param {Line} l1 first line
+  # @param {Line} l2 second line
+  # @param {Number} ts timestep
+  # @return {Number} time to collision or NONE
+  angularCollisionLineLine = (l1, l2, ts) ->
+    angleAfterTimestep = (line) ->
+      line.radRotation() + line.angularVelocity('r') * ts
+    
+    # check for potential collision triangle in this timestep
+    k = l2.radRotation() - l1.radRotation() + ts * (l2.angularVelocity('r') - l1.angularVelocity('r'))
+    return collisions.NONE unless Math.PI <= k <= Math.PI*2
+    
+    # if triangle is formed correctly, use approximation and sine rule
+    # get angles of the new triangle
+    pq = l2.pos.subtract(l1.pos)
+    d = pq.mag()
+    
+    l1v = Vector.unitVector(angleAfterTimestep(l1))
+    l2v = Vector.unitVector(angleAfterTimestep(l2))
+    pqu = pq.toUnitVector()
+    l1vAngle = Math.acos(l1v.dot(pqu))
+    l2vAngle = Math.acos(l2v.dot(pqu.x(-1)))
+    beta = Math.radRangeAngle(Math.PI - (l1vAngle + l2vAngle), 0)
+    precision = 0.00005
+    console.log("beta: #{beta}, d: #{d}")
+    # Need length PR or QR calculated from triangle
+    # Use law of cosines for each side
+    l2len = Math.sqrt(d*d + l1.length*l1.length - 2*d*l1.length*Math.cos(l1vAngle))
+    d1 = (Math.sin(beta) / l1.length) - (Math.sin(l2vAngle) / d)
+    d2 = (Math.sin(beta) / l2len) - (Math.sin(l1vAngle) / d)
+    console.log "d1: #{d1} d2: #{d2}"
+    if (Math.abs(d1) <= precision) || (Math.abs(d2) <= precision)
+      console.log "equality found: #{d1}"
+      return {t: 0}
+    
+    l1len = Math.sqrt(d*d + l2.length*l2.length - 2*d*l2.length*Math.cos(l2vAngle))
+    d1 = (Math.sin(beta) / l1len) - (Math.sin(l2vAngle) / d)
+    d2 = (Math.sin(beta) / l2.length) - (Math.sin(l1vAngle) / d)
+    console.log "d1: #{d1} d2: #{d2}"
+    if (Math.abs(d1) <= precision) || (Math.abs(d2) <= precision)
+      console.log "equality found: #{d1}"
+      return {t: 0}
         
+    collisions.NONE
+    
   isImpendingCollision = (ts) ->
     0 < ts <= 1
   
@@ -526,6 +571,7 @@ collisions = (->
   angularCollisionLineCircle,
   angularCollisionLineCircle2,
   angularCollisionLineStationaryLine,
+  angularCollisionLineLine,
   pointInTriangle, 
   pointInPolygon}
 )()
