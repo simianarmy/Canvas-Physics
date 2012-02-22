@@ -44,5 +44,8 @@ class Rectangle extends Shape
     @pos.subtract(@majorAxis.add(@minorAxis)),
     @pos.subtract(@majorAxis.subtract(@minorAxis))]
     
+  MOIFactor: ->
+    @width*@height*(@width+@height)/12
+    
 root = exports ? window
 root.Rectangle = Rectangle

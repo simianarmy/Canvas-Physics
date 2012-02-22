@@ -20,6 +20,9 @@ class Line extends Shape
     if @rotation > 0
       @vec = Vector.unitVector(Math.degreesToRadians(@rotation)).x(@length)
   
+  MOIFactor: ->
+    @length * @length * 4
+    
   toString: ->
     "Line: " + super + " vector: " + @vec.inspect()
 

@@ -317,20 +317,26 @@ collisions = (->
       line.radRotation() + line.angularVelocity('r') * ts
     
     # check for potential collision triangle in this timestep
-    k = l2.radRotation() - l1.radRotation() + ts * (l2.angularVelocity('r') - l1.angularVelocity('r'))
-    return collisions.NONE unless Math.PI <= k <= Math.PI*2
+    theta0 = l1.radRotation()
+    phi0 = l2.radRotation()
+    
+    k0 = phi0 - theta0
+    k1 = phi0 - theta0 + (l2.angularVelocity('r') - l1.angularVelocity('r'))
+    unless (Math.PI <= k0 <= Math.PI*2) || (Math.PI <= k1 <= Math.PI*2)
+      return collisions.NONE 
     
     # if triangle is formed correctly, use approximation and sine rule
     # get angles of the new triangle
     pq = l2.pos.subtract(l1.pos)
+    pqu = pq.toUnitVector()
     d = pq.mag()
     
     l1v = Vector.unitVector(angleAfterTimestep(l1))
     l2v = Vector.unitVector(angleAfterTimestep(l2))
-    pqu = pq.toUnitVector()
+    
     l1vAngle = Math.acos(l1v.dot(pqu))
     l2vAngle = Math.acos(l2v.dot(pqu.x(-1)))
-    beta = Math.radRangeAngle(Math.PI - (l1vAngle + l2vAngle), 0)
+    beta = Math.radRangeAngle(Math.PI - l1vAngle - l2vAngle, 0)
     precision = 0.00005
     console.log("beta: #{beta}, d: #{d}")
     # Need length PR or QR calculated from triangle
@@ -443,6 +449,51 @@ collisions = (->
     s1.velocity = if baseIsZero then ut else ut.add(base)
     s2.velocity = if baseIsZero then wn else wn.add(base)
   
+  # resolveAngularCollision
+  #
+  # Sets velocity and angular velocities after elastic collision
+  # @param {Shape} s1 first object
+  # @param {Shape} s2 other object
+  # @param {Vector} n normal of collision
+  # @param {Vector} mom1 moment vector for s1 
+  #   mom = clockwise normal of the radius vector
+  # @param {Vectory} mom2 moment vector for s2
+  resolveAngularCollision = (s1, s2, n, mom1, mom2) ->
+    u1 = s1.velocity
+    u2 = s2.velocity
+    om1 = s1.angularVelocity('r')
+    om2 = s2.angularVelocity('r')
+    
+    J = 2 * u2.subtract(u1).add(mom2.x(om2)).subtract(mom1.x(om1)).dot(n)
+    denom = 0
+    if !s1.isFixedLinear()
+      m1 = s1.mass
+      denom += 1 / m1
+    if !s2.isFixedLinear()
+      m2 = s2.mass
+      denom += 1 / m2
+    if !s1.isFixedAngular()
+      moi1 = s1.MOI()
+      dp1 = mom1.dot(n)
+      denom += (dp1*dp1 / moi1)
+    if !s2.isFixedAngular()
+      moi2 = s2.MOI()
+      dp2 = mom2.dot(n)
+      denom += (dp2*dp2 / moi2)
+    return if denom == 0 # coincident axes or weirdness
+    
+    J /= denom
+    if !s1.isFixedLinear()
+      s1.setVelocity(u1.add(n.x(J).div(m1)))
+    if !s2.isFixedLinear()
+      s2.setVelocity(u2.subtract(n.x(J).div(m2)))
+    if !s1.isFixedAngular()
+      s1.setAngularVelocity(om1 + J * dp1 / moi1)
+    if !s2.isFixedAngular()
+      s2.setAngularVelocity(om2 - j * dp2 / moi2)
+  
+    
+    
   # resolveCollision  
   #                                                   
   # General purpose collision resolution for arbitrary shapes  

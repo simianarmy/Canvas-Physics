@@ -8,6 +8,9 @@ class Circle extends Shape
     super
     @name = 'Circle'
     
+  MOIFactor: ->
+    0.5 * @radius * @radius
+  
   toString: ->
     s = "Circle: " + super
     

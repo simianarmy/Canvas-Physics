@@ -6,7 +6,6 @@
 class Shape
   constructor: (x, y, z, opts={}) ->
     @pos = $V([x, y, z])
-    @mass = @efficiency = 1.0
     @collisionNormal  = null # vector
     @[x] = val for x, val of opts
     # initial speed, angular speed, etc
@@ -19,6 +18,8 @@ class Shape
     @rotDirection ?= 1
     @fixedLinear ?= false
     @fixedAngular ?= true
+    @mass ?= 1.0 
+    @efficiency ?= 1.0
     
   # move object position by vector amount
   # @param {Vector} vec vector of movement
@@ -49,12 +50,17 @@ class Shape
     else
       @pos
   
+  # Position getter shortcuts
   x: -> @pos.e(1)
   y: -> @pos.e(2)
   z: -> @pos.e(3)
   
   isRotating: ->
     @angSpeed > 0
+    
+  isFixedLinear: -> @fixedLinear
+  
+  isFixedAngular: -> @fixedAngular
     
   # Sets shape's angle of rotation
   # @param {Number} rot (degrees)
@@ -85,6 +91,13 @@ class Shape
     @rotDirection = if v > 0 then 1 else -1
     @angSpeed = Math.abs(v) # * 180 / Math.PI
     
+  setVelocity: (@velocity) ->
+    
+  # moment of inertia
+  MOI: ->
+    # Use the shape info to calculate
+    @mass * @MOIFactor()
+  
   # prototype properties
   toString: -> 
     kvs = for key, val of @ when val? and typeof(val) != 'function'
