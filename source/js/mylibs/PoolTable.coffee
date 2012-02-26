@@ -11,7 +11,7 @@ NUM_BALLS           = 16
 BALL_RADIUS         = 10
 POCKET_SIZE         = 1.02
 JAW_SIZE            = 1.4
-DECELARATION        = .95
+DECELARATION        = .55
 TABLE_FRICTION      = .75
 CUSHION_EFFICIENCY  = 1
 CUEING_SCALE        = 10
@@ -285,8 +285,8 @@ PoolTable = (ctxt, opts) ->
     s = point(b.radius/2, b.radius/2)
     context.save()
     # Show spinning ball with moving spot
-    if b.moving
-      drawBallSpot(b)
+    # if b.moving
+    #      drawBallSpot(b)
     
     context.fillStyle    = '#FFFFFF'
     context.font         = '10px Arial sans-serif'
@@ -457,14 +457,18 @@ PoolTable = (ctxt, opts) ->
       b.staticFriction = true
       
   # Apply linear and kinetic friction to balls (with topspin)
-  applyFrictionToBalls = (balls, linearFriction, kinFriction) ->
+  # @param {Array} list of balls
+  # @param {Number} res constant air resistance factor reducing linear speed
+  # @param {Number} kinFriction kinetic friction term (only affects motion with spin)
+  # @param {Number} ts current time step
+  applyFrictionToBalls = (balls, res, kinFriction, ts) ->
     for b in balls when b.moving
       # Adjust moving flag in case ball has stopped
       if !ballIsMoving(b) && b.staticFriction
         b.moving = false
       else
-        # slow ball speed from friction
-        b.speed = Math.max(b.speed - linearFriction, 0)
+        # apply linear friction term
+        b.speed = Math.max(b.speed - res, 0)
         # calculate kinetic friction for balls which are not rolling with static friction
         if !b.staticFriction
           # x topspin = x linear speed
@@ -498,7 +502,7 @@ PoolTable = (ctxt, opts) ->
   # @param {Array} moving objects  
   # @param {Array} fixed objects  
   moveBalls = (ts, balls, cushions, pockets) ->
-    applyFrictionToBalls(balls, frictionDecelaration, kineticFriction)
+    applyFrictionToBalls(balls, frictionDecelaration, kineticFriction, ts)
     
     return "stopped" unless ballsMoving()
     ogts = ts
@@ -545,8 +549,9 @@ PoolTable = (ctxt, opts) ->
       # @param {Number} proportion or angular velocity lost (between 0, 1)
       resolveBallCushionCollision = (ball, cushion, normal, prop) ->
         # angular velocity decreases by some amount phi
-        phi = ball.angVel * prop
-        ball.angVel -= phi
+        omega = ball.angularVelocity()
+        phi = omega * prop
+        ball.setAngularVelocity(omega - phi)
         # apply impulse to calculate resulting change in linear velocity
         # impulse = I*phi/radius
         # I = (ball.mass * ball.radius^2) / 4
@@ -554,7 +559,7 @@ PoolTable = (ctxt, opts) ->
         # = (ball.radius^2 * phi)/4 * tang
         tang = normal.clockwiseNormal()
         velchange = tang.x(0.4 * phi * ball.radius * ball.radius)
-        ball.velocity = ball.velocity.subtract(velchange)
+        ball.setVelocity ball.velocity.subtract(velchange)
         # then apply perpendicular impulse as usual
         collisions.resolveInelasticCollisionFixed(ball, cushion, normal)
         

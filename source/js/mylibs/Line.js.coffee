@@ -4,7 +4,7 @@
 #= require ./Shape
 
 class Line extends Shape
-  constructor: (sx, sy, ex, ey, opts) ->
+  constructor: (sx, sy, ex, ey, opts={}) ->
     super(sx, sy, 0, opts)
     @vec = $V([ex, ey, 0])
     @name = 'Line'
