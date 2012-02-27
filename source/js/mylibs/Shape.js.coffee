@@ -7,7 +7,7 @@ class Shape
   constructor: (x, y, z, opts={}) ->
     @pos = $V([x, y, z])
     @collisionNormal  = null # vector
-    @[x] = val for x, val of opts
+    @[x] = val for x, val of opts # Store options as properties
     # initial speed, angular speed, etc
     @velocity ?= Vector.Zero(3)
     @displacement ?= Vector.Zero(3)
