@@ -15,6 +15,10 @@ class Line extends Shape
     @fixedLinear = (ex == 0 && ey == 0)
     @fixedAngular = @rotation == 0
     
+  # endpoint vector
+  endpoint: ->
+    @pos.add(@vec)
+    
   setRotation: (rot) ->
     super(rot)
     if @rotation > 0
@@ -26,6 +30,6 @@ class Line extends Shape
   toString: ->
     "Line: " + super + " vector: " + @vec.inspect()
 
-    
+  
 root = exports ? window
 root.Line = Line

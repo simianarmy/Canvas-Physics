@@ -3,6 +3,36 @@
     <h1 class="title">Springs simulations</h1>
   </header>
   <section>
+    <nav>
+      <a href="#" class="forceFromSpring">Force from spring</a>
+    </nav>
+    <ul id="controls">
+      <li>
+        <label>Spring length: </label><input type="range" name="springLen" min="10" max="600" step="5" value="100"/>
+        <span id="springLen"></span>
+      </li>
+      <li>
+        <label>Min. length: </label><input type="range" name="springMinLen" min="10" max="50" step="5" value="10"/>
+        <span id="springMinLen"></span>
+      </li>
+      <li>
+        <label>Spring elasticity: </label><input type="range" name="springElasticity" min="0" max="1" step="0.05" value=".5"/>
+        <span id="springElasticity"></span>
+      </li>
+      <li>
+        <label>Damping: </label><input type="range" name="springDamping" min="0" max="1" step="0.05" value=".5"/>
+        <span id="springDamping"></span>
+      </li>
+      <li>
+        <label>Elastic limit: </label><input type="range" name="elasticLimit" min="10" max="1000" step="5" value="300"/>
+        <span id="elasticLimit"></span>
+      </li>
+      <li>
+        <label>Compressiveness: </label><input type="radio" name="compressiveness" value="loose"/ checked="checked"> Loose
+          <input type="radio" name="compressiveness" value="rigid"/> Rigid
+      </li>
+    </ul>
+    
     <canvas id="maincanvas" width="800" height="600"></canvas>
     <div id="info">
     </div>

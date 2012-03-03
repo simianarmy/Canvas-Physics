@@ -37,6 +37,19 @@ Canvas = (() ->
   # @return true if drawing with world view coordinates (default = true)
   inWorldView = () ->
     @worldView
+  
+  # Draw text at point with correct orientation  
+  drawText = (text, x, y, opts={}) ->
+    @inContext((ctxt) ->
+      # when origin is cartesian, we must restore to world view to draw text
+      if !@inWorldView()
+        ctxt.scale(1, -1);
+        ctxt.translate(0, -@height);
+      ctxt.fillStyle    = opts.fillStyle ? 'black'
+      ctxt.font         = opts.font ? '12px Arial sans-serif'
+      ctxt.textBaseline = opts.textBaseline ? 'top'
+      ctxt.fillText(text, x, y)
+    )
     
   # Draw a circle on the canvas
   # @param {Circle} c a Circle object
@@ -54,7 +67,7 @@ Canvas = (() ->
   # Draw a line on the canvas
   # @param {Line} line a Line object
   drawLine = (line) ->
-    endpoint = line.pos.add(line.vec)
+    endpoint = line.endpoint()
     @ctxt.beginPath()
     @ctxt.moveTo line.pos.e(1), line.pos.e(2)
     @ctxt.lineTo endpoint.e(1), endpoint.e(2)
@@ -111,7 +124,7 @@ Canvas = (() ->
   # Perform actions in a canvas context
   inContext = (fn) ->
     @ctxt.save()
-    fn(@ctxt) # pass context back to callback as argument
+    fn.call(this, @ctxt) # pass context back to callback as argument
     @ctxt.restore()
     
   # return the constructor
@@ -119,6 +132,7 @@ Canvas = (() ->
     constructor: Canvas
     version: "1.0"
     setOrigin: setOrigin
+    drawText: drawText
     drawCircle: drawCircle
     drawCircleAt: drawCircleAt
     drawLine: drawLine
