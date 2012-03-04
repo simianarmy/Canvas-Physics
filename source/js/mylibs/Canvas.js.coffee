@@ -67,10 +67,15 @@ Canvas = (() ->
   # Draw a line on the canvas
   # @param {Line} line a Line object
   drawLine = (line) ->
-    endpoint = line.endpoint()
+    @drawLineFromPoints line.pos, line.endpoint()
+    
+  # draw line from endpoints
+  # @param {Vector} pnt1 starting point
+  # @param {Vector} pnt2 ending point
+  drawLineFromPoints = (pnt1, pnt2) ->
     @ctxt.beginPath()
-    @ctxt.moveTo line.pos.e(1), line.pos.e(2)
-    @ctxt.lineTo endpoint.e(1), endpoint.e(2)
+    @ctxt.moveTo pnt1.e(1), pnt1.e(2)
+    @ctxt.lineTo pnt2.e(1), pnt2.e(2)
     @ctxt.stroke()
     @ctxt.closePath()
     
@@ -136,6 +141,7 @@ Canvas = (() ->
     drawCircle: drawCircle
     drawCircleAt: drawCircleAt
     drawLine: drawLine
+    drawLineFromPoints: drawLineFromPoints
     drawEllipse: drawEllipse
     drawRect: drawRect
     inContext: inContext

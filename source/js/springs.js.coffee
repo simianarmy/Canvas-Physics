@@ -28,10 +28,10 @@ $(document).ready ->
   updateControls = ->
     springLen = parseInt $('input[name=springLen]').val()
     springMinLen = parseInt $('input[name=springMinLen]').val()
-    springElasticity = parseFloat $('input[name=springElasticity]').val()
+    springElasticity = parseInt $('input[name=springElasticity]').val()
     springDamping = parseFloat $('input[name=springDamping]').val()
     elasticLimit = parseInt Math.max($('input[name=elasticLimit]').val(), springLen)
-    compressiveness = parseInt $('input[name=compressiveness]').val()
+    compressiveness = $('input[name=compressiveness]:checked').val()
     
     # Display updated values next to sliders
     $('#springLen').html(springLen)
@@ -40,14 +40,23 @@ $(document).ready ->
     $('#springDamping').html(springDamping)
     $('#elasticLimit').html(elasticLimit)
     
+    spring? && updateSpring(spring)
+    
   # update spring properties (from controls)
   updateSpring = (spring) ->
     spring.elasticity = springElasticity
     spring.damping = springDamping
-    spring.compressiveness = if compressiveness == Spring.LOOSE then Spring.LOOSE else Spring.RIGID
+    spring.compressiveness = if compressiveness == 'loose' then Spring.LOOSE else Spring.RIGID
     spring.minLength = springMinLen
     spring.elasticLimit = elasticLimit
-  
+
+  # move spring endpoint up or down
+  moveSpringEnd = (dir) ->
+    if dir == 'u'
+      spring.pnt2 = spring.pnt2.add($V([0, 5, 0]))
+    else
+      spring.pnt2 = spring.pnt2.subtract($V([0, 5, 0]))
+      
   # Force on particle due to spring simulation
   forceFromStringSim = ->
     console.log "init force from spring simulation"
@@ -57,17 +66,16 @@ $(document).ready ->
       $V([0, 0, 0]), 
       $V([0, 10, 0]),
       springLen)
-    updateSpring(spring)
-    
-    # Create particle at end of spring
-    #particle = new Circle(canvas.width/2, springLen, 0, { radius: 5 })
+    updateSpring spring
     
     objects = [spring]
+    # start animation
+    paused = false
   
   # Draw objects on canvas
   drawScene = (objects, ts) ->
     canvas.clear()
-    canvas.drawText("force at endpoint: #{forceOnEnd.inspect()}", canvas.width/2, 50)
+    canvas.drawText("force at endpoint: #{forceOnEnd}", 10, 50)
     
     for obj in objects
       switch obj.name
@@ -76,14 +84,18 @@ $(document).ready ->
             canvas.drawCircle obj
 
         when 'Spring'
-          canvas.drawLine obj
+          canvas.drawText("spring length: #{obj.currentLength()}", 10, 60)
+          canvas.drawLineFromPoints obj.pnt1, obj.pnt2
           
   # Update object properties in this frame
   updateObjects = (ts) ->
     # calculate force on endpoint
-    forceOnEnd = spring.forceOnEndpoint()
-    if (forceOnEnd == Spring.BOUNCE)
+    f = spring.forceOnEndpoint()
+    if (f == Spring.BOUNCE)
       console.log("BOUNCE")
+      forceOnEnd = "BOUNCE"
+    else
+      forceOnEnd = f.inspect()
       
     # adjust spring length and endpoint velocity based on force value
   # animate all objects
@@ -105,6 +117,22 @@ $(document).ready ->
     
     drawScene(objects, elapsed)
     
+  # prevent arrow keys from scrolling around
+  keyDown = (evt) ->
+    console.log "on key down #{evt.keyCode}"
+    evt.preventDefault()
+    evt.stopPropagation()
+    return false if paused
+    dir = null
+
+    switch evt.keyCode
+      when 38, 87
+        dir = 'u'
+      when 40, 83
+        dir = 'd'
+
+    moveSpringEnd(dir) if dir?
+      
   # event handlers
   $('canvas').click ->
     paused = !paused
@@ -114,6 +142,8 @@ $(document).ready ->
   # Update simulation controls
   $('#controls input').change(updateControls);
     
+  $(document).keydown(keyDown)
+  
   updateControls()
   tick()
   

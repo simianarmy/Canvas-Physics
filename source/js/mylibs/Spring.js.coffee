@@ -30,6 +30,9 @@ class Spring extends Line
     @compressiveness  ?= Spring.LOOSE
     @minLength        ?= 1
   
+  currentLength: ->
+     @pnt1.subtract(@pnt2).mag()
+     
   # General purpose function to determine force on a particle due to the 
   # spring (at spring endpoint).  
   # This function must be used when neither endpoing of the spring is fixed in place.
