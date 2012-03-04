@@ -23,6 +23,7 @@ $(document).ready ->
   elasticLimit = 0
   compressiveness = 0
   gravity = 9.8
+  energy = null
   forceOnEnd = Vector.Zero()
   objects = []
   spring = null
@@ -129,11 +130,18 @@ $(document).ready ->
         forceOnEnd = f.inspect()
     else if sim == 'particle'
       # calculate new particle properties
-      next = particles.particleOnSpring(spring, particle, null, ts, gravity)
+      next = particles.particleOnSpring(spring, particle, energy, ts, gravity)
+      console.log "new pos: #{next.pos.inspect()}"
+      console.log "new speed: #{next.speed}"
       spring.pnt2 = next.pos.dup()
       particle.pos = next.pos.dup()
       particle.speed = next.speed
-      particle.direction = next.velocity.dup()
+      if next.speed > 0
+        console.log "new velocity: #{next.velocity.inspect()}"
+        particle.direction = next.velocity.dup()
+      energy = next.totalEnergy
+      if spring.forceOnEndpoint() == Spring.BOUNCE
+        particle.direction = particle.direction.x(-1)
       
     # adjust spring length and endpoint velocity based on force value
   # animate all objects

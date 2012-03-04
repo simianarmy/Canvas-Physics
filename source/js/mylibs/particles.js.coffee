@@ -40,7 +40,7 @@ particles = (->
     f = $V([0, pmass * g, 0])
     if (e > 0) || spring.isCompressive()
       if d > 0
-        f.add v.x(spring.elasticity * e / d)
+        f = f.add v.x(spring.elasticity * e / d)
         
     # calculate new position
     a = f.divide(pmass)
