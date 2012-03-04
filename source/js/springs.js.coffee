@@ -8,11 +8,13 @@
 #= require mylibs/Spring
 #= require mylibs/Circle
 #= require mylibs/Canvas
-  
+#= require mylibs/particles
+
 $(document).ready ->
   canvas = new Canvas($("#maincanvas").get(0))
   canvas.setOrigin('bottomleft')
   elapsed = lastTime = 0
+  sim = 'force'
   paused = true
   springLen = 0
   springMinLen = 0
@@ -20,9 +22,11 @@ $(document).ready ->
   springDamping = 0
   elasticLimit = 0
   compressiveness = 0
+  gravity = 9.8
   forceOnEnd = Vector.Zero()
   objects = []
   spring = null
+  particle = null
   
   # Collect control values
   updateControls = ->
@@ -60,6 +64,8 @@ $(document).ready ->
   # Force on particle due to spring simulation
   forceFromStringSim = ->
     console.log "init force from spring simulation"
+    sim = 'force'
+    $('#instructions').show().html($('#ffsInstructions').html())
     # Create spring & particle to attach to an endpoint
     # Fix spring end to bottom center
     spring = new Spring($V([canvas.width/2, 0, 0]), $V([0, springLen, 0]), 
@@ -72,16 +78,39 @@ $(document).ready ->
     # start animation
     paused = false
   
+  # Moving particle on a spring simulation
+  particleOnStringSim = ->
+    console.log "particle on spring simulation"
+    sim = 'particle'
+    $('#instructions').show().html($('#posInstructions').html())
+    # Create spring & particle to attach to an endpoint
+    # Fix spring end to bottom center
+    spring = new Spring($V([canvas.width/2, canvas.height, 0]), $V([0, -springLen, 0]), 
+      $V([0, 0, 0]), 
+      $V([0, 10, 0]),
+      springLen)
+    updateSpring spring
+    
+    particle = new Circle(canvas.width/2, canvas.height-springLen, 0, {
+      radius: 10,
+      color: 'black',
+      mass: 50,
+      speed: 10,
+      direction: $V([0, -1, 0])
+    })
+    objects = [spring, particle]
+    # start animation
+    paused = false
+    
   # Draw objects on canvas
   drawScene = (objects, ts) ->
     canvas.clear()
-    canvas.drawText("force at endpoint: #{forceOnEnd}", 10, 50)
+    canvas.drawText("force at endpoint: #{forceOnEnd}", 10, 50) if sim == 'force'
     
     for obj in objects
       switch obj.name
         when 'Circle'
-          canvas.inContext ->
-            canvas.drawCircle obj
+          canvas.drawCircle obj
 
         when 'Spring'
           canvas.drawText("spring length: #{obj.currentLength()}", 10, 60)
@@ -89,13 +118,22 @@ $(document).ready ->
           
   # Update object properties in this frame
   updateObjects = (ts) ->
-    # calculate force on endpoint
-    f = spring.forceOnEndpoint()
-    if (f == Spring.BOUNCE)
-      console.log("BOUNCE")
-      forceOnEnd = "BOUNCE"
-    else
-      forceOnEnd = f.inspect()
+    # determine which simulation to run
+    if sim == 'force'
+      # calculate force on endpoint
+      f = spring.forceOnEndpoint()
+      if (f == Spring.BOUNCE)
+        console.log("BOUNCE")
+        forceOnEnd = "BOUNCE"
+      else
+        forceOnEnd = f.inspect()
+    else if sim == 'particle'
+      # calculate new particle properties
+      next = particles.particleOnSpring(spring, particle, null, ts, gravity)
+      spring.pnt2 = next.pos.dup()
+      particle.pos = next.pos.dup()
+      particle.speed = next.speed
+      particle.direction = next.velocity.dup()
       
     # adjust spring length and endpoint velocity based on force value
   # animate all objects
@@ -138,10 +176,12 @@ $(document).ready ->
     paused = !paused
       
   $('.forceFromSpring').click(forceFromStringSim);
-
+  $('.particleOnSpring').click(particleOnStringSim);
+  
   # Update simulation controls
   $('#controls input').change(updateControls);
-    
+  
+  $('#info span').hide()
   $(document).keydown(keyDown)
   
   updateControls()

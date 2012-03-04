@@ -33,9 +33,12 @@ class Spring extends Line
   currentLength: ->
      @pnt1.subtract(@pnt2).mag()
      
+  isCompressive: =>
+    @compressiveness == Spring.RIGID
+    
   # General purpose function to determine force on a particle due to the 
   # spring (at spring endpoint).  
-  # This function must be used when neither endpoing of the spring is fixed in place.
+  # This function must be used when neither endpoint of the spring is fixed in place.
   # @return {Vector} force vector
   forceOnEndpoint: ->
     elasticity = 0
