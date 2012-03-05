@@ -22,10 +22,12 @@ $(document).ready ->
   springDamping = 0
   elasticLimit = 0
   compressiveness = 0
-  gravity = 9.8
+  particleMass = 0
+  gravity = 5
   energy = null
   forceOnEnd = Vector.Zero()
   objects = []
+  drawableText = []
   spring = null
   particle = null
   
@@ -37,6 +39,7 @@ $(document).ready ->
     springDamping = parseFloat $('input[name=springDamping]').val()
     elasticLimit = parseInt Math.max($('input[name=elasticLimit]').val(), springLen)
     compressiveness = $('input[name=compressiveness]:checked').val()
+    particleMass = parseInt $('input[name=pMass]').val()
     
     # Display updated values next to sliders
     $('#springLen').html(springLen)
@@ -44,8 +47,10 @@ $(document).ready ->
     $('#springElasticity').html(springElasticity)
     $('#springDamping').html(springDamping)
     $('#elasticLimit').html(elasticLimit)
+    $('#pMass').html(particleMass)
     
     spring? && updateSpring(spring)
+    particle? && updateParticle(particle)
     
   # update spring properties (from controls)
   updateSpring = (spring) ->
@@ -55,6 +60,10 @@ $(document).ready ->
     spring.minLength = springMinLen
     spring.elasticLimit = elasticLimit
 
+  updateParticle = (p) ->
+    p.mass = particleMass
+    p.radius = Math.max(particleMass / 5, 1)
+    
   # move spring endpoint up or down
   moveSpringEnd = (dir) ->
     if dir == 'u'
@@ -93,10 +102,10 @@ $(document).ready ->
     updateSpring spring
     
     particle = new Circle(canvas.width/2, canvas.height-springLen, 0, {
-      radius: 10,
+      radius: particleMass/5,
       color: 'black',
-      mass: 50,
-      speed: 10,
+      mass: particleMass,
+      speed: 50,
       direction: $V([0, -1, 0])
     })
     objects = [spring, particle]
@@ -106,7 +115,10 @@ $(document).ready ->
   # Draw objects on canvas
   drawScene = (objects, ts) ->
     canvas.clear()
-    canvas.drawText("force at endpoint: #{forceOnEnd}", 10, 50) if sim == 'force'
+    textY = 10
+    for text in drawableText
+      canvas.drawText(text, 10, textY)
+      textY += 25
     
     for obj in objects
       switch obj.name
@@ -114,35 +126,46 @@ $(document).ready ->
           canvas.drawCircle obj
 
         when 'Spring'
-          canvas.drawText("spring length: #{obj.currentLength()}", 10, 60)
           canvas.drawLineFromPoints obj.pnt1, obj.pnt2
           
+  queueOutput = (txt) ->
+    drawableText.push txt
+    
   # Update object properties in this frame
   updateObjects = (ts) ->
     # determine which simulation to run
     if sim == 'force'
       # calculate force on endpoint
       f = spring.forceOnEndpoint()
+      
       if (f == Spring.BOUNCE)
         console.log("BOUNCE")
         forceOnEnd = "BOUNCE"
       else
         forceOnEnd = f.inspect()
+      queueOutput "force at endpoint: #{forceOnEnd}"
+      
     else if sim == 'particle'
       # calculate new particle properties
       next = particles.particleOnSpring(spring, particle, energy, ts, gravity)
-      console.log "new pos: #{next.pos.inspect()}"
-      console.log "new speed: #{next.speed}"
+      
+      queueOutput "new pos: #{next.pos.inspect()}"
+      queueOutput "new speed: #{next.speed}"
+      queueOutput "new energy: #{next.totalEnergy}"
+      
       spring.pnt2 = next.pos.dup()
       particle.pos = next.pos.dup()
       particle.speed = next.speed
+      
       if next.speed > 0
-        console.log "new velocity: #{next.velocity.inspect()}"
+        queueOutput "new velocity: #{next.velocity.inspect()}"
         particle.direction = next.velocity.dup()
       energy = next.totalEnergy
-      if spring.forceOnEndpoint() == Spring.BOUNCE
-        particle.direction = particle.direction.x(-1)
-      
+      #if spring.forceOnEndpoint() == Spring.BOUNCE
+        #particle.direction = particle.direction.x(-1)
+        
+    queueOutput "spring length: #{spring.currentLength()}"
+    
     # adjust spring length and endpoint velocity based on force value
   # animate all objects
   update = ->
@@ -151,6 +174,7 @@ $(document).ready ->
     if lastTime != 0
       elapsed = (timeNow - lastTime) / 1000
       elapsed = 0.1 if elapsed > 0.1
+      drawableText = []
       updateObjects(elapsed)
       
     lastTime = timeNow

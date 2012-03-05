@@ -32,6 +32,10 @@
         <label>Compressiveness: </label><input type="radio" name="compressiveness" value="loose"/ checked="checked"> Loose
           <input type="radio" name="compressiveness" value="rigid"/> Rigid
       </li>
+      <li>
+        <label>Particle mass: </label><input type="range" name="pMass" min="1" max="100" step="5" value="50"/>
+        <span id="pMass"></span>
+      </li>
     </ul>
     
     <canvas id="maincanvas" width="800" height="600"></canvas>
