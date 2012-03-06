@@ -33,7 +33,7 @@ canvasEvents = (canvas) ->
     convertEventToCanvas evt
   
   # return public functions
-  {mouseDown, mouseUp, mouseMove}
+  {convertEventToCanvas, mouseDown, mouseUp, mouseMove}
   
 root = exports ? window
 root.canvasEvents = canvasEvents

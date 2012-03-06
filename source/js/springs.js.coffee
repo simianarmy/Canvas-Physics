@@ -9,27 +9,39 @@
 #= require mylibs/Circle
 #= require mylibs/Canvas
 #= require mylibs/particles
+#= require mylibs/canvasEvents
+#= require mylibs/collisions
 
 $(document).ready ->
-  canvas = new Canvas($("#maincanvas").get(0))
+  $canvas = $("#maincanvas")
+  canvasEl = $canvas.get(0)
+  canvas = new Canvas(canvasEl)
   canvas.setOrigin('bottomleft')
+  events = canvasEvents canvasEl
   elapsed = lastTime = 0
   sim = 'force'
   paused = true
+  # spring properties
   springLen = 0
   springMinLen = 0
   springElasticity = 0
   springDamping = 0
   elasticLimit = 0
   compressiveness = 0
+  # particle properties
   particleMass = 0
+  # world properties
   gravity = 5
   energy = null
   forceOnEnd = Vector.Zero()
+  # objects 
   objects = []
   drawableText = []
   spring = null
   particle = null
+  # mouse throwing variables
+  mouseOnBall = false
+  lastDragPoint = null
   
   # Collect control values
   updateControls = ->
@@ -105,7 +117,7 @@ $(document).ready ->
       radius: particleMass/5,
       color: 'black',
       mass: particleMass,
-      speed: 50,
+      speed: 0,
       direction: $V([0, -1, 0])
     })
     objects = [spring, particle]
@@ -160,11 +172,23 @@ $(document).ready ->
       if next.speed > 0
         queueOutput "new velocity: #{next.velocity.inspect()}"
         particle.direction = next.velocity.dup()
-      energy = next.totalEnergy
-      #if spring.forceOnEndpoint() == Spring.BOUNCE
-        #particle.direction = particle.direction.x(-1)
+      else
+        # get force on particle from spring
+        f = spring.forceOnEndpoint()
+        particle.speed = f.mag()
+        particle.direction = f.toUnitVector()
         
+      energy = next.totalEnergy
+      
     queueOutput "spring length: #{spring.currentLength()}"
+    
+  # Initiate user 'throw' of a particle on spring
+  # @param {Vector} v vector of throw
+  throwBall = (v) ->
+    console.log "throwing ball #{v.inspect()}"
+    particle.speed = v.mag()
+    particle.direction = v.toUnitVector()
+    paused = false
     
     # adjust spring length and endpoint velocity based on force value
   # animate all objects
@@ -186,7 +210,11 @@ $(document).ready ->
       update()
     
     drawScene(objects, elapsed)
-    
+  
+  # convert mouse coordinates to vector with proper y-orientation  
+  pointToVec = (p) ->
+    $V([p.x, canvas.height-p.y, 0])
+  
   # prevent arrow keys from scrolling around
   keyDown = (evt) ->
     console.log "on key down #{evt.keyCode}"
@@ -203,9 +231,27 @@ $(document).ready ->
 
     moveSpringEnd(dir) if dir?
       
-  # event handlers
-  $('canvas').click ->
-    paused = !paused
+  mouseDown = (evt) ->
+    p = events.convertEventToCanvas(evt)
+    mouseOnBall = particle && collisions.pointInCircle(pointToVec(p), particle)      
+    if mouseOnBall
+      paused = true
+      lastDragPoint = p
+    
+  mouseUp = (evt) ->
+    p = events.convertEventToCanvas(evt)
+    if mouseOnBall
+      # save throwing velocity
+      console.log "last pos", lastDragPoint
+      console.log "pos now", p
+      throwBall pointToVec(p).subtract(pointToVec(lastDragPoint))
+    mouseOnBall = false
+      
+  mouseMove = (evt) ->
+    if mouseOnBall
+      lastDragPoint = events.convertEventToCanvas(evt)
+      particle.pos = pointToVec(lastDragPoint)
+      spring.pnt2 = particle.pos
       
   $('.forceFromSpring').click(forceFromStringSim);
   $('.particleOnSpring').click(particleOnStringSim);
@@ -215,6 +261,9 @@ $(document).ready ->
   
   $('#info span').hide()
   $(document).keydown(keyDown)
+  $canvas.mousedown(mouseDown)
+  $canvas.mouseup(mouseUp)
+  $canvas.mousemove(mouseMove)
   
   updateControls()
   tick()

@@ -573,6 +573,13 @@ collisions = (->
     nextts = ts * (1 - mn)
     checkCollisions(nextts, moving, fixed) if nextts > Sylvester.precision
   
+  # determine if a point lies inside a circle
+  # @param {Vector} pt point
+  # @param {Circle} circle circle object
+  pointInCircle = (pt, circle) ->
+    dist = circle.pos.subtract(pt).mag()
+    dist <= circle.radius
+    
   # determine if a point lies inside a triangle
   # using alg. from http://www.blackpawn.com/texts/pointinpoly/default.html
   pointInTriangle = (pt, triangle) ->
@@ -614,16 +621,17 @@ collisions = (->
     (intersections % 2) == 1
 
   # Return public functions
-  {checkCollisions,
-  detectCollision, 
-  isImpendingCollision,
-  resolveCollision,
-  resolveInelasticCollisionFixed,
-  angularCollisionLineCircle,
-  angularCollisionLineCircle2,
-  angularCollisionLineStationaryLine,
-  angularCollisionLineLine,
-  pointInTriangle, 
+  {checkCollisions
+  detectCollision
+  isImpendingCollision
+  resolveCollision
+  resolveInelasticCollisionFixed
+  angularCollisionLineCircle
+  angularCollisionLineCircle2
+  angularCollisionLineStationaryLine
+  angularCollisionLineLine
+  pointInCircle
+  pointInTriangle 
   pointInPolygon}
 )()
 
