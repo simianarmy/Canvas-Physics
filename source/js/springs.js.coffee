@@ -31,7 +31,7 @@ $(document).ready ->
   # particle properties
   particleMass = 0
   # world properties
-  gravity = 5
+  gravity = 10
   energy = null
   forceOnEnd = Vector.Zero()
   # objects 
@@ -42,6 +42,8 @@ $(document).ready ->
   # mouse throwing variables
   mouseOnBall = false
   lastDragPoint = null
+  lastDragTime = 0
+  dragPoints = []
   
   # Collect control values
   updateControls = ->
@@ -68,10 +70,17 @@ $(document).ready ->
   updateSpring = (spring) ->
     spring.elasticity = springElasticity
     spring.damping = springDamping
-    spring.compressiveness = if compressiveness == 'loose' then Spring.LOOSE else Spring.RIGID
     spring.minLength = springMinLen
     spring.elasticLimit = elasticLimit
-
+    
+    if compressiveness == 'loose'
+      spring.compressiveness = Spring.LOOSE 
+    else if compressiveness == 'rigid'
+      spring.compressiveness = Spring.RIGID
+    else
+      spring.compressive = true
+    
+    
   updateParticle = (p) ->
     p.mass = particleMass
     p.radius = Math.max(particleMass / 5, 1)
@@ -107,7 +116,7 @@ $(document).ready ->
     $('#instructions').show().html($('#posInstructions').html())
     # Create spring & particle to attach to an endpoint
     # Fix spring end to bottom center
-    spring = new Spring($V([canvas.width/2, canvas.height, 0]), $V([0, -springLen, 0]), 
+    spring = new Spring($V([canvas.width/2, canvas.height-100, 0]), $V([0, -springLen, 0]), 
       $V([0, 0, 0]), 
       $V([0, 10, 0]),
       springLen)
@@ -169,32 +178,51 @@ $(document).ready ->
       particle.pos = next.pos.dup()
       particle.speed = next.speed
       
-      if next.speed > 0
-        queueOutput "new velocity: #{next.velocity.inspect()}"
+      if particle.speed > 0
+        queueOutput "new direction: #{next.velocity.inspect()}"
         particle.direction = next.velocity.dup()
-      else
-        # get force on particle from spring
-        f = spring.forceOnEndpoint()
-        particle.speed = f.mag()
-        particle.direction = f.toUnitVector()
-        
       energy = next.totalEnergy
       
+      # apply gravity
+      f = spring.forceOnEndpoint()
+      ten = $V([0, particle.mass * gravity, 0])
+      
+      if f == Spring.BOUNCE
+        console.log "BOUNCE!"
+        
+      else
+        ten = ten.add(f)
+        acc = ten.divide(particle.mass)
+        spring.pnt2 = particle.pos = particle.pos.add(particle.direction.x(particle.speed*ts)).add(acc.x(ts*ts/2))
+        particle.velocity = particle.velocity.add(acc.x(ts))
+        particle.direction = particle.velocity.toUnitVector()
+        
+      #queueOutput "force on particle from spring: #{f.inspect()}"
+      # set force on particle from spring
+      # particle.speed = f.mag()
+      # particle.direction = f.toUnitVector()
+
     queueOutput "spring length: #{spring.currentLength()}"
     
   # Initiate user 'throw' of a particle on spring
-  # @param {Vector} v vector of throw
-  throwBall = (v) ->
-    console.log "throwing ball #{v.inspect()}"
-    particle.speed = v.mag()
-    particle.direction = v.toUnitVector()
+  # @param {Vector} p current mouse position
+  throwBall = (p) ->
+    ts = ((new Date).getTime() - dragPoints[0][0]) / 1000
+    return unless ts > 0
+    dv = p.subtract(dragPoints[0][1])
+    particle.velocity = dv.divide(ts)
+    particle.speed = particle.velocity.mag()
+    if (particle.speed > 0)
+      particle.direction = particle.velocity.toUnitVector()
+    console.log "ball speed: #{particle.speed}"
+    console.log "ball dir: #{particle.direction.inspect()}"
     paused = false
     
     # adjust spring length and endpoint velocity based on force value
   # animate all objects
   update = ->
     # Pass latest timestep to the collision detection function
-    timeNow = new Date().getTime()
+    timeNow = (new Date()).getTime()
     if lastTime != 0
       elapsed = (timeNow - lastTime) / 1000
       elapsed = 0.1 if elapsed > 0.1
@@ -236,15 +264,12 @@ $(document).ready ->
     mouseOnBall = particle && collisions.pointInCircle(pointToVec(p), particle)      
     if mouseOnBall
       paused = true
-      lastDragPoint = p
+      dragPoints.push([(new Date()).getTime(), pointToVec(p)])
     
   mouseUp = (evt) ->
     p = events.convertEventToCanvas(evt)
     if mouseOnBall
-      # save throwing velocity
-      console.log "last pos", lastDragPoint
-      console.log "pos now", p
-      throwBall pointToVec(p).subtract(pointToVec(lastDragPoint))
+      throwBall pointToVec(p)
     mouseOnBall = false
       
   mouseMove = (evt) ->
@@ -252,6 +277,8 @@ $(document).ready ->
       lastDragPoint = events.convertEventToCanvas(evt)
       particle.pos = pointToVec(lastDragPoint)
       spring.pnt2 = particle.pos
+      dragPoints.push([(new Date()).getTime(), particle.pos])
+      dragPoints.shift() if dragPoints.length > 5
       
   $('.forceFromSpring').click(forceFromStringSim);
   $('.particleOnSpring').click(particleOnStringSim);

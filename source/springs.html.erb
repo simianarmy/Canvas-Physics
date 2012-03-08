@@ -17,20 +17,21 @@
         <span id="springMinLen"></span>
       </li>
       <li>
-        <label>Spring elasticity: </label><input type="range" name="springElasticity" min="1" max="100" step="1" value="10"/>
+        <label>Spring elasticity: </label><input type="range" name="springElasticity" min="1" max="100" step="1" value="1"/>
         <span id="springElasticity"></span>
       </li>
       <li>
-        <label>Damping: </label><input type="range" name="springDamping" min="0" max="1" step="0.05" value=".5"/>
+        <label>Damping: </label><input type="range" name="springDamping" min="0" max="1" step="0.05" value="0"/>
         <span id="springDamping"></span>
       </li>
       <li>
-        <label>Elastic limit: </label><input type="range" name="elasticLimit" min="10" max="1000" step="5" value="350"/>
+        <label>Elastic limit: </label><input type="range" name="elasticLimit" min="10" max="500" step="5" value="120"/>
         <span id="elasticLimit"></span>
       </li>
       <li>
         <label>Compressiveness: </label><input type="radio" name="compressiveness" value="loose"/ checked="checked"> Loose
-          <input type="radio" name="compressiveness" value="rigid"/> Rigid
+          <input type="radio" name="compressiveness" value="rigid"/> Rigid 
+          <input type="radio" name="compressiveness" value="compressive"/> Compressive
       </li>
       <li>
         <label>Particle mass: </label><input type="range" name="pMass" min="1" max="100" step="5" value="50"/>

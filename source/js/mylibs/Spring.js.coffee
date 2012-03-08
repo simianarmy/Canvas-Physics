@@ -25,16 +25,17 @@ class Spring extends Line
     @pnt2 = @endpoint()
     # Set property defaults
     @elasticity       ?= 1
-    @damping          ?= 1
+    @damping          ?= 0
     @elasticLimit     ?= 1
-    @compressiveness  ?= Spring.LOOSE
+    @compressiveness  ?= Spring.RIGID
+    @compressive      ?= false
     @minLength        ?= 1
   
   currentLength: ->
      @pnt1.subtract(@pnt2).mag()
      
   isCompressive: =>
-    @compressiveness == Spring.RIGID
+    @compressive || (@compressiveness == Spring.RIGID)
     
   # General purpose function to determine force on a particle due to the 
   # spring (at spring endpoint).  
@@ -75,7 +76,7 @@ class Spring extends Line
 
   toString: ->
     "Spring at #{@pnt1.inspect()}"
-    
+
 root = exports ? window
 root.Spring = Spring
     
