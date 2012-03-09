@@ -84,6 +84,9 @@ $(document).ready ->
   updateParticle = (p) ->
     p.mass = particleMass
     p.radius = Math.max(particleMass / 5, 1)
+    p.speed = 0
+    p.direction = $V([0, 0, 0])
+    energy = null
     
   # move spring endpoint up or down
   moveSpringEnd = (dir) ->
@@ -118,7 +121,7 @@ $(document).ready ->
     # Fix spring end to bottom center
     spring = new Spring($V([canvas.width/2, canvas.height-100, 0]), $V([0, -springLen, 0]), 
       $V([0, 0, 0]), 
-      $V([0, 10, 0]),
+      $V([0, 0, 0]),
       springLen)
     updateSpring spring
     
@@ -152,6 +155,49 @@ $(document).ready ->
   queueOutput = (txt) ->
     drawableText.push txt
     
+  checkCollisions = ->
+    return unless particle?
+    
+    # Check for particle bounce against edges
+    l = particle.pos
+    pr = particle.radius
+    change = false
+    # check x
+    if l.e(1) < pr
+      l.elements[0] += (pr - l.e(1)) * 2
+      particle.direction.elements[0] = Math.abs(particle.direction.e(1))
+      change = true
+    else if l.e(1) > (canvas.width - pr)
+      l.elements[0] -= Math.abs((l.e(1) - canvas.width - pr) * 2)
+      particle.direction.elements[0] = -Math.abs(particle.direction.e(1))
+      change = true
+    # check y
+    if l.e(2) < pr
+      l.elements[1] += (pr - l.e(2)) * 2
+      particle.direction.elements[1] = Math.abs(particle.direction.e(2))
+      change = true
+    else if l.e(2) > (canvas.height - pr)
+      l.elements[1] -= Math.abs((l.e(2) - canvas.height - pr) * 2)
+      particle.direction.elements[1] = -Math.abs(particle.direction.e(2))
+      change = true
+    
+    # double check
+    if change
+      if l.e(1) < pr
+        l.elements[0] = pr
+        particle.direction.elements[0] = 0
+      else if l.e(1) > (canvas.width - pr)
+        l.elements[0] = canvas.width - pr
+        particle.direction.elements[0] = 0
+      if l.e(2) < pr
+        l.elements[1] = pr
+        particle.direction.elements[1] = 0
+      else if l.e(2) > (canvas.height - pr)
+        l.elements[1] = canvas.height - pr
+        particle.direction.elements[1] = 0
+      
+      particle.pos = spring.pnt2 = l
+    
   # Update object properties in this frame
   updateObjects = (ts) ->
     # determine which simulation to run
@@ -170,32 +216,32 @@ $(document).ready ->
       # calculate new particle properties
       next = particles.particleOnSpring(spring, particle, energy, ts, gravity)
       
-      queueOutput "new pos: #{next.pos.inspect()}"
-      queueOutput "new speed: #{next.speed}"
-      queueOutput "new energy: #{next.totalEnergy}"
+      queueOutput "particle pos: #{next.pos.inspect()}"
+      queueOutput "particle speed: #{next.speed}"
+      queueOutput "total energy: #{next.totalEnergy}"
       
       spring.pnt2 = next.pos.dup()
       particle.pos = next.pos.dup()
       particle.speed = next.speed
       
       if particle.speed > 0
-        queueOutput "new direction: #{next.velocity.inspect()}"
+        queueOutput "particle direction: #{next.velocity.inspect()}"
         particle.direction = next.velocity.dup()
       energy = next.totalEnergy
       
-      # apply gravity
-      f = spring.forceOnEndpoint()
-      ten = $V([0, particle.mass * gravity, 0])
-      
-      if f == Spring.BOUNCE
-        console.log "BOUNCE!"
-        
-      else
-        ten = ten.add(f)
-        acc = ten.divide(particle.mass)
-        spring.pnt2 = particle.pos = particle.pos.add(particle.direction.x(particle.speed*ts)).add(acc.x(ts*ts/2))
-        particle.velocity = particle.velocity.add(acc.x(ts))
-        particle.direction = particle.velocity.toUnitVector()
+      # # apply gravity
+      #       f = spring.forceOnEndpoint()
+      #       ten = $V([0, particle.mass * gravity, 0])
+      #       
+      #       if f == Spring.BOUNCE
+      #         console.log "BOUNCE!"
+      #         
+      #       else
+      #         ten = ten.add(f)
+      #         acc = ten.divide(particle.mass)
+      #         spring.pnt2 = particle.pos = particle.pos.add(particle.direction.x(particle.speed*ts)).add(acc.x(ts*ts/2))
+      #         particle.velocity = particle.velocity.add(acc.x(ts))
+      #         particle.direction = particle.velocity.toUnitVector()
         
       #queueOutput "force on particle from spring: #{f.inspect()}"
       # set force on particle from spring
@@ -227,6 +273,7 @@ $(document).ready ->
       elapsed = (timeNow - lastTime) / 1000
       elapsed = 0.1 if elapsed > 0.1
       drawableText = []
+      checkCollisions()
       updateObjects(elapsed)
       
     lastTime = timeNow
@@ -264,6 +311,7 @@ $(document).ready ->
     mouseOnBall = particle && collisions.pointInCircle(pointToVec(p), particle)      
     if mouseOnBall
       paused = true
+      energy = null
       dragPoints.push([(new Date()).getTime(), pointToVec(p)])
     
   mouseUp = (evt) ->

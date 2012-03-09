@@ -37,9 +37,10 @@ particles = (->
         te -= gpe
     
     # calculate force
-    f = $V([0, pmass * g, 0])
+    f = $V([0, pmass * g, 0]) # weight
     if (e > 0) || spring.isCompressive()
       if d > 0
+        # v/d gives direction of spring
         f = f.add v.x(spring.elasticity * e / d)
         
     # calculate new position
