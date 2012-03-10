@@ -11,10 +11,10 @@ class Spring extends Line
   # force value constant
   Spring.BOUNCE = -1
   Spring.Motion = {
-    SHM: 1
-    UNDERDAMPED: 2
-    CRITICAL: 3
-    OVERDAMPED: 4
+    SHM: 'shm'
+    UNDERDAMPED: 'underdamped'
+    CRITICAL: 'critical'
+    OVERDAMPED: 'overdamped'      
   }
   # @param {Vector} pnt1 starting position vector
   # @param {Vector} vec direction & length of spring vector

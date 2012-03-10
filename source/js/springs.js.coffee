@@ -177,6 +177,11 @@ $(document).ready ->
     # start animation
     paused = false
     
+  # Multiple connected springs simulation
+  multiSpringSim = ->
+    console.log "Multispring simulation"
+    sim = 'multi'
+    
   # Draw objects on canvas
   drawScene = (objects, ts) ->
     canvas.clear()
@@ -240,6 +245,30 @@ $(document).ready ->
       particle.pos = l
       spring.pnt2 = l if spring?
     
+  # calculate article position/speed from springs force & gravity
+  # @param {Circle} particle
+  # @param {Array} springs all spring objects
+  # @param {Number} ts timestep
+  updateParticleFromSpringForces = (p, springs, ts) ->
+    ten = $V([0, p.mass * gravity, 0])
+    for sp in springs
+      f = sp.forceOnEndpoint()
+      if f == Spring.BOUNCE
+        console.log "BOUNCE!"
+        # resolve collision
+        return updateParticleFromSpringForces(p, springs, ts)
+      else
+        ten = ten.add(f)
+
+    # apply force to particle
+    acc = ten.divide(particle.mass)
+    queueOutput "force on particle from spring: #{f.inspect()}"
+    
+    particle.pos = particle.pos.add(particle.direction.x(particle.speed*ts)).add(acc.x(ts*ts/2))
+    particle.velocity = particle.velocity.add(acc.x(ts))
+    particle.speed = particle.velocity.mag()
+    particle.direction = particle.velocity.toUnitVector()
+  
   # Update object properties in this frame
   updateObjects = (ts) ->
     # determine which simulation to run
@@ -254,6 +283,8 @@ $(document).ready ->
         forceOnEnd = f.inspect()
       queueOutput "force at endpoint: #{forceOnEnd}"
       
+      #for o in objects
+        # updateParticleFromSprings 
     else if sim == 'particle'
       # calculate new particle properties
       next = particles.particleOnSpring(spring, particle, energy, ts, gravity)
@@ -277,29 +308,11 @@ $(document).ready ->
         speed = Spring.getOscillatorSpeed(springElasticity, springDamping, dhmParams, t, pos)
         queueOutput "DHM pos: #{pos}"
         queueOutput "DHM speed: #{speed}"
-        
+        queueOutput "motion: #{dhmParams.motion}"
         particle.moveTo $V([particle.x(), pos + canvas.height/2, 0])
         particle.speed = speed
         queueOutput "particle pos: #{particle.pos.inspect()}"
         queueOutput "particle speed: #{particle.speed}"
-      # # apply gravity
-      #       f = spring.forceOnEndpoint()
-      #       ten = $V([0, particle.mass * gravity, 0])
-      #       
-      #       if f == Spring.BOUNCE
-      #         console.log "BOUNCE!"
-      #         
-      #       else
-      #         ten = ten.add(f)
-      #         acc = ten.divide(particle.mass)
-      #         spring.pnt2 = particle.pos = particle.pos.add(particle.direction.x(particle.speed*ts)).add(acc.x(ts*ts/2))
-      #         particle.velocity = particle.velocity.add(acc.x(ts))
-      #         particle.direction = particle.velocity.toUnitVector()
-        
-      #queueOutput "force on particle from spring: #{f.inspect()}"
-      # set force on particle from spring
-      # particle.speed = f.mag()
-      # particle.direction = f.toUnitVector()
 
     queueOutput "spring length: #{spring.currentLength()}" if spring?
     
@@ -368,9 +381,10 @@ $(document).ready ->
       dragPoints.push([(new Date()).getTime(), particle.pos])
       dragPoints.shift() if dragPoints.length > 5
       
-  $('.forceFromSpring').click(forceFromStringSim);
-  $('.particleOnSpring').click(particleOnStringSim);
-  $('.dhm').click(dhmSim);
+  $('.forceFromSpring').click(forceFromStringSim)
+  $('.particleOnSpring').click(particleOnStringSim)
+  $('.dhm').click(dhmSim)
+  $('.multiSpring').click(multiSpringSim)
   
   # Update simulation controls
   $('#controls input').change(updateControls);
