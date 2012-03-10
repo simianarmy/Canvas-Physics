@@ -4,6 +4,7 @@
   </header>
   <section>
     <nav>
+      <a href="#" class="dhm">DHM</a> |
       <a href="#" class="forceFromSpring">Force from spring</a> |
       <a href="#" class="particleOnSpring">Particle on spring</a>
     </nav>
@@ -21,7 +22,7 @@
         <span id="springElasticity"></span>
       </li>
       <li>
-        <label>Damping: </label><input type="range" name="springDamping" min="0" max="1" step="0.05" value="0"/>
+        <label>Damping: </label><input type="range" name="springDamping" min="0" max="5" step="0.1" value=".05"/>
         <span id="springDamping"></span>
       </li>
       <li>
@@ -29,12 +30,12 @@
         <span id="elasticLimit"></span>
       </li>
       <li>
-        <label>Compressiveness: </label><input type="radio" name="compressiveness" value="loose"/ checked="checked"> Loose
+        <label>Compressiveness: </label><input type="radio" name="compressiveness" value="loose"/> Loose
           <input type="radio" name="compressiveness" value="rigid"/> Rigid 
-          <input type="radio" name="compressiveness" value="compressive"/> Compressive
+          <input type="radio" name="compressiveness" value="compressive"/ checked="checked"> Compressive
       </li>
       <li>
-        <label>Particle mass: </label><input type="range" name="pMass" min="1" max="100" step="5" value="10"/>
+        <label>Particle mass: </label><input type="range" name="pMass" min="1" max="50" step="1" value="10"/>
         <span id="pMass"></span>
       </li>
     </ul>

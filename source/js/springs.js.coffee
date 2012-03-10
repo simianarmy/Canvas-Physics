@@ -34,6 +34,7 @@ $(document).ready ->
   gravity = 10
   energy = null
   forceOnEnd = Vector.Zero()
+  dhmParams = null
   # objects 
   objects = []
   drawableText = []
@@ -43,6 +44,8 @@ $(document).ready ->
   mouseOnBall = false
   lastDragPoint = null
   lastDragTime = 0
+  throwTime = 0
+  posOffset = 0
   dragPoints = []
   
   # Collect control values
@@ -87,6 +90,7 @@ $(document).ready ->
     p.speed = 0
     p.direction = $V([0, 0, 0])
     energy = null
+    dhmParams = Spring.initialDHMParams()
     
   # move spring endpoint up or down
   moveSpringEnd = (dir) ->
@@ -94,7 +98,27 @@ $(document).ready ->
       spring.pnt2 = spring.pnt2.add($V([0, 5, 0]))
     else
       spring.pnt2 = spring.pnt2.subtract($V([0, 5, 0]))
-      
+    
+  # Initiate user 'throw' of a particle on spring
+  # @param {Vector} p current mouse position
+  throwBall = (p) ->
+    ts = ((new Date).getTime() - dragPoints[0][0]) / 1000
+    return unless ts > 0
+    dv = p.subtract(dragPoints[0][1])
+    particle.velocity = dv.divide(ts)
+    particle.speed = Math.min(particle.velocity.mag(), 150)
+    if (particle.speed > 0)
+      particle.direction = particle.velocity.toUnitVector()
+    console.log "ball speed: #{particle.speed}"
+    console.log "ball dir: #{particle.direction.inspect()}"
+    paused = false
+    
+    # Calculate DHM params now too
+    initPos = p.e(2) - posOffset - canvas.height/2
+    initVel = dv.e(2)
+    dhmParams = Spring.calculateDHMParams(initPos, initVel, springElasticity, springDamping)
+    throwTime = (new Date).getTime()      
+    
   # Force on particle due to spring simulation
   forceFromStringSim = ->
     console.log "init force from spring simulation"
@@ -126,13 +150,30 @@ $(document).ready ->
     updateSpring spring
     
     particle = new Circle(canvas.width/2, canvas.height-springLen, 0, {
-      radius: particleMass/5,
+      radius: particleMass/2,
       color: 'black',
       mass: particleMass,
       speed: 0,
       direction: $V([0, -1, 0])
     })
     objects = [spring, particle]
+    # start animation
+    paused = false
+    
+  # DHM simulation
+  dhmSim = ->
+    console.log "DHM simulation"
+    sim = 'dhm'
+    $('#instructions').show().html($('#posInstructions').html())
+    particle = new Circle(canvas.width/2, canvas.height/2, 0, {
+      radius: particleMass/2,
+      color: 'black',
+      mass: particleMass,
+      speed: 0,
+      direction: $V([0, 0, 0])
+    })
+    objects = [particle]
+    dhmParams = Spring.initialDHMParams()
     # start animation
     paused = false
     
@@ -196,7 +237,8 @@ $(document).ready ->
         l.elements[1] = canvas.height - pr
         particle.direction.elements[1] = 0
       
-      particle.pos = spring.pnt2 = l
+      particle.pos = l
+      spring.pnt2 = l if spring?
     
   # Update object properties in this frame
   updateObjects = (ts) ->
@@ -228,7 +270,18 @@ $(document).ready ->
         queueOutput "particle direction: #{next.velocity.inspect()}"
         particle.direction = next.velocity.dup()
       energy = next.totalEnergy
-      
+    else if sim == 'dhm'
+      if throwTime > 0
+        t = ((new Date()).getTime() - throwTime) / 1000
+        pos = Spring.getOscillatorPosition(springElasticity, springDamping, dhmParams, t)
+        speed = Spring.getOscillatorSpeed(springElasticity, springDamping, dhmParams, t, pos)
+        queueOutput "DHM pos: #{pos}"
+        queueOutput "DHM speed: #{speed}"
+        
+        particle.moveTo $V([particle.x(), pos + canvas.height/2, 0])
+        particle.speed = speed
+        queueOutput "particle pos: #{particle.pos.inspect()}"
+        queueOutput "particle speed: #{particle.speed}"
       # # apply gravity
       #       f = spring.forceOnEndpoint()
       #       ten = $V([0, particle.mass * gravity, 0])
@@ -248,21 +301,7 @@ $(document).ready ->
       # particle.speed = f.mag()
       # particle.direction = f.toUnitVector()
 
-    queueOutput "spring length: #{spring.currentLength()}"
-    
-  # Initiate user 'throw' of a particle on spring
-  # @param {Vector} p current mouse position
-  throwBall = (p) ->
-    ts = ((new Date).getTime() - dragPoints[0][0]) / 1000
-    return unless ts > 0
-    dv = p.subtract(dragPoints[0][1])
-    particle.velocity = dv.divide(ts)
-    particle.speed = particle.velocity.mag()
-    if (particle.speed > 0)
-      particle.direction = particle.velocity.toUnitVector()
-    console.log "ball speed: #{particle.speed}"
-    console.log "ball dir: #{particle.direction.inspect()}"
-    paused = false
+    queueOutput "spring length: #{spring.currentLength()}" if spring?
     
     # adjust spring length and endpoint velocity based on force value
   # animate all objects
@@ -312,6 +351,7 @@ $(document).ready ->
     if mouseOnBall
       paused = true
       energy = null
+      posOffset = p.y - particle.y()
       dragPoints.push([(new Date()).getTime(), pointToVec(p)])
     
   mouseUp = (evt) ->
@@ -324,12 +364,13 @@ $(document).ready ->
     if mouseOnBall
       lastDragPoint = events.convertEventToCanvas(evt)
       particle.pos = pointToVec(lastDragPoint)
-      spring.pnt2 = particle.pos
+      spring.pnt2 = particle.pos if spring?
       dragPoints.push([(new Date()).getTime(), particle.pos])
       dragPoints.shift() if dragPoints.length > 5
       
   $('.forceFromSpring').click(forceFromStringSim);
   $('.particleOnSpring').click(particleOnStringSim);
+  $('.dhm').click(dhmSim);
   
   # Update simulation controls
   $('#controls input').change(updateControls);
