@@ -45,11 +45,25 @@ class Spring extends Line
   # General purpose function to determine force on a particle due to the 
   # spring (at spring endpoint).  
   # This function must be used when neither endpoint of the spring is fixed in place.
+  # @params: {Object} opts options
   # @return {Vector} force vector
-  forceOnEndpoint: ->
+  forceOnEndpoint: (opts={}) ->
+    # Caller can pass reverse: true to calculate force on the 'start' 
+    # end of the spring
+    if opts.reverse
+      pnt1 = @pnt2
+      pnt2 = @pnt1
+      vel1 = @evel
+      vel2 = @svel
+    else
+      pnt1 = @pnt1
+      pnt2 = @pnt2
+      vel1 = @svel
+      vel2 = @evel
+      
     elasticity = 0
     damping = 0
-    v = @pnt1.subtract(@pnt2)
+    v = pnt1.subtract(pnt2)
     d = v.mag()
     return Vector.Zero() if d == 0
     
@@ -72,7 +86,7 @@ class Spring extends Line
     e = d - @length
     vec = v.divide(d)
     f = if @damping > 0
-      comp = @svel.subtract(@evel).component(vec)
+      comp = vel1.subtract(vel2).component(vec)
       @damping * comp + @elasticity * e
     else
       elasticity * e

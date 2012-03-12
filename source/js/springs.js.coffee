@@ -21,6 +21,7 @@ $(document).ready ->
   elapsed = lastTime = 0
   sim = 'force'
   paused = true
+  updateObjectsFn = null
   # spring properties
   springLen = 0
   springMinLen = 0
@@ -86,7 +87,7 @@ $(document).ready ->
     
   updateParticle = (p) ->
     p.mass = particleMass
-    p.radius = Math.max(particleMass / 5, 1)
+    p.radius = Math.max(particleMass / 2, 1)
     p.speed = 0
     p.direction = $V([0, 0, 0])
     energy = null
@@ -133,6 +134,7 @@ $(document).ready ->
     updateSpring spring
     
     objects = [spring]
+    updateObjectsFn = updateForceSim
     # start animation
     paused = false
   
@@ -150,13 +152,11 @@ $(document).ready ->
     updateSpring spring
     
     particle = new Circle(canvas.width/2, canvas.height-springLen, 0, {
-      radius: particleMass/2,
-      color: 'black',
-      mass: particleMass,
-      speed: 0,
-      direction: $V([0, -1, 0])
+      color: 'black'
     })
+    updateParticle particle
     objects = [spring, particle]
+    updateObjectsFn = updateParticleEnergySim
     # start animation
     paused = false
     
@@ -166,14 +166,12 @@ $(document).ready ->
     sim = 'dhm'
     $('#instructions').show().html($('#posInstructions').html())
     particle = new Circle(canvas.width/2, canvas.height/2, 0, {
-      radius: particleMass/2,
-      color: 'black',
-      mass: particleMass,
-      speed: 0,
-      direction: $V([0, 0, 0])
+      color: 'black'
     })
+    updateParticle particle
     objects = [particle]
     dhmParams = Spring.initialDHMParams()
+    updateObjectsFn = updateDHMSim
     # start animation
     paused = false
     
@@ -181,6 +179,39 @@ $(document).ready ->
   multiSpringSim = ->
     console.log "Multispring simulation"
     sim = 'multi'
+    
+    # Start w/ 2 springs & 2 particles
+    s1 = new Spring($V([canvas.width/2, canvas.height-10, 0]), $V([0, -springLen, 0]), 
+      $V([0, 0, 0]), 
+      $V([0, 0, 0]),
+      springLen)
+    updateSpring s1
+    s2 = new Spring($V([s1.endpoint().e(1), s1.endpoint().e(2), 0]), $V([0, -springLen, 0]), 
+      $V([0, 0, 0]), 
+      $V([0, 0, 0]),
+      springLen)
+    updateSpring s2
+    # particle attached to s1 & s2
+    p1 = new Circle(s2.x(), s2.y(), 0, {
+      color: 'black'
+    })
+    updateParticle p1
+    # particle attached to s2 endpoint
+    p2 = new Circle(s2.endpoint().e(1), s2.endpoint().e(2), 0, {
+      color: 'black'
+    })
+    updateParticle p2
+
+    # s1 point is fixed
+    # set particle/spring pairings for force calculations
+    # end: 1 = particle at start of spring, 2 = at end of spring
+    p1.springs = [{spring: s1, end: 2}, {spring: s2, end: 1}]
+    p2.springs = [{spring: s2, end: 2}]
+    
+    objects = [s1, s2, p1, p2]
+    updateObjectsFn = updateMultiSpringSim
+    # start animation
+    paused = false
     
   # Draw objects on canvas
   drawScene = (objects, ts) ->
@@ -247,75 +278,95 @@ $(document).ready ->
     
   # calculate article position/speed from springs force & gravity
   # @param {Circle} particle
-  # @param {Array} springs all spring objects
   # @param {Number} ts timestep
-  updateParticleFromSpringForces = (p, springs, ts) ->
+  updateParticleFromSpringForces = (p, ts) ->
+    # update spring endpoint with particle's new position & velocity
+    updateSpringEndProps = (spring, end, pos, vel) ->
+      if end == 1
+        spring.pnt1 = pos
+        spring.svel = vel
+      else
+        spring.pnt2 = pos
+        spring.evel = vel
+        
     ten = $V([0, p.mass * gravity, 0])
-    for sp in springs
-      f = sp.forceOnEndpoint()
+    for sp in p.springs
+      f = sp.spring.forceOnEndpoint({reverse: sp.end == 1})
       if f == Spring.BOUNCE
         console.log "BOUNCE!"
         # resolve collision
-        return updateParticleFromSpringForces(p, springs, ts)
+        collisions.resolveCollisionFixed p, sp.spring.pnt2.subtract(sp.spring.pnt1).toUnitVector()
+        p.speed = p.velocity.mag()
+        p.direction = p.velocity.toUnitVector()
+        #updateSpringEndProps sp.spring, sp.end, p.pos, p.velocity
+        #return updateParticleFromSpringForces(p, ts)
+        break
       else
         ten = ten.add(f)
-
+    
+    return if f == Spring.BOUNCE
     # apply force to particle
-    acc = ten.divide(particle.mass)
+    acc = ten.divide(p.mass)
     queueOutput "force on particle from spring: #{f.inspect()}"
     
-    particle.pos = particle.pos.add(particle.direction.x(particle.speed*ts)).add(acc.x(ts*ts/2))
-    particle.velocity = particle.velocity.add(acc.x(ts))
-    particle.speed = particle.velocity.mag()
-    particle.direction = particle.velocity.toUnitVector()
-  
-  # Update object properties in this frame
-  updateObjects = (ts) ->
-    # determine which simulation to run
-    if sim == 'force'
-      # calculate force on endpoint
-      f = spring.forceOnEndpoint()
-      
-      if (f == Spring.BOUNCE)
-        console.log("BOUNCE")
-        forceOnEnd = "BOUNCE"
-      else
-        forceOnEnd = f.inspect()
-      queueOutput "force at endpoint: #{forceOnEnd}"
-      
-      #for o in objects
-        # updateParticleFromSprings 
-    else if sim == 'particle'
-      # calculate new particle properties
-      next = particles.particleOnSpring(spring, particle, energy, ts, gravity)
-      
-      queueOutput "particle pos: #{next.pos.inspect()}"
-      queueOutput "particle speed: #{next.speed}"
-      queueOutput "total energy: #{next.totalEnergy}"
-      
-      spring.pnt2 = next.pos.dup()
-      particle.pos = next.pos.dup()
-      particle.speed = next.speed
-      
-      if particle.speed > 0
-        queueOutput "particle direction: #{next.velocity.inspect()}"
-        particle.direction = next.velocity.dup()
-      energy = next.totalEnergy
-    else if sim == 'dhm'
-      if throwTime > 0
-        t = ((new Date()).getTime() - throwTime) / 1000
-        pos = Spring.getOscillatorPosition(springElasticity, springDamping, dhmParams, t)
-        speed = Spring.getOscillatorSpeed(springElasticity, springDamping, dhmParams, t, pos)
-        queueOutput "DHM pos: #{pos}"
-        queueOutput "DHM speed: #{speed}"
-        queueOutput "motion: #{dhmParams.motion}"
-        particle.moveTo $V([particle.x(), pos + canvas.height/2, 0])
-        particle.speed = speed
-        queueOutput "particle pos: #{particle.pos.inspect()}"
-        queueOutput "particle speed: #{particle.speed}"
-
-    queueOutput "spring length: #{spring.currentLength()}" if spring?
+    p.pos = p.pos.add(p.direction.x(p.speed*ts)).add(acc.x(ts*ts/2))
+    p.velocity = p.velocity.add(acc.x(ts))
+    p.speed = p.velocity.mag()
+    p.direction = p.velocity.toUnitVector()
     
+    # Update springs' endpoint properties
+    for sp in p.springs
+      updateSpringEndProps sp.spring, sp.end, p.pos, p.velocity
+
+  # update function for force simulation
+  updateForceSim = (ts) ->
+    # calculate force on endpoint
+    f = spring.forceOnEndpoint()
+    
+    if (f == Spring.BOUNCE)
+      console.log("BOUNCE")
+      forceOnEnd = "BOUNCE"
+    else
+      forceOnEnd = f.inspect()
+    queueOutput "force at endpoint: #{forceOnEnd}"
+    queueOutput "spring length: #{spring.currentLength()}"
+    
+  # update function for particle simulation
+  updateParticleEnergySim = (ts) ->
+    # calculate new particle properties
+    next = particles.particleOnSpring(spring, particle, energy, ts, gravity)
+    
+    queueOutput "particle pos: #{next.pos.inspect()}"
+    queueOutput "particle speed: #{next.speed}"
+    queueOutput "total energy: #{next.totalEnergy}"
+    
+    spring.pnt2 = next.pos.dup()
+    particle.pos = next.pos.dup()
+    particle.speed = next.speed
+    
+    if particle.speed > 0
+      queueOutput "particle direction: #{next.velocity.inspect()}"
+      particle.direction = next.velocity.dup()
+    energy = next.totalEnergy
+    queueOutput "spring length: #{spring.currentLength()}"
+    
+  updateDHMSim = (ts) ->
+    if throwTime > 0
+      t = ((new Date()).getTime() - throwTime) / 1000
+      pos = Spring.getOscillatorPosition(springElasticity, springDamping, dhmParams, t)
+      speed = Spring.getOscillatorSpeed(springElasticity, springDamping, dhmParams, t, pos)
+      queueOutput "DHM pos: #{pos}"
+      queueOutput "DHM speed: #{speed}"
+      queueOutput "motion: #{dhmParams.motion}"
+      particle.moveTo $V([particle.x(), pos + canvas.height/2, 0])
+      particle.speed = speed
+      queueOutput "particle pos: #{particle.pos.inspect()}"
+      queueOutput "particle speed: #{particle.speed}"
+
+  updateMultiSpringSim = (ts) ->
+    for p in objects when p.name == 'Circle'
+      updateParticleFromSpringForces(p, ts)
+      
     # adjust spring length and endpoint velocity based on force value
   # animate all objects
   update = ->
@@ -326,7 +377,7 @@ $(document).ready ->
       elapsed = 0.1 if elapsed > 0.1
       drawableText = []
       checkCollisions()
-      updateObjects(elapsed)
+      updateObjectsFn.call(@, elapsed)
       
     lastTime = timeNow
 

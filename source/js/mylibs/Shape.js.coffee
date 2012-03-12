@@ -91,7 +91,8 @@ class Shape
     @rotDirection = if v > 0 then 1 else -1
     @angSpeed = Math.abs(v) # * 180 / Math.PI
     
-  setVelocity: (@velocity) ->
+  setVelocity: (vel) ->
+    @velocity = vel.dup()
     
   # moment of inertia
   MOI: ->

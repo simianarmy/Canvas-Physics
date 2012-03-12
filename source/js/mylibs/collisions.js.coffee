@@ -409,6 +409,15 @@ collisions = (->
     vn = un.x(-1).x(sq)
     s1.velocity = ut.add(vn)
       
+  # resolveCollisionFixed
+  #
+  # Sets velocity of an object after an elastic collision along normal
+  # @param {Shape} ob colliding object
+  # @param {Vector} n collision along normal
+  resolveCollisionFixed = (ob, n) ->
+    u = ob.velocity
+    ob.setVelocity u.subtract(u.componentVector(n).x(2))
+    
   # resolveCollisionEqualMass
   #
   # Sets velocity of 2 objects with equal mass after elastic collision along normal  
@@ -625,6 +634,7 @@ collisions = (->
   detectCollision
   isImpendingCollision
   resolveCollision
+  resolveCollisionFixed
   resolveInelasticCollisionFixed
   angularCollisionLineCircle
   angularCollisionLineCircle2
