@@ -181,7 +181,7 @@ $(document).ready ->
     sim = 'multi'
     
     # Start w/ 2 springs & 2 particles
-    s1 = new Spring($V([canvas.width/2, canvas.height-10, 0]), $V([0, -springLen, 0]), 
+    s1 = new Spring($V([canvas.width/2, canvas.height/2, 0]), $V([0, -springLen, 0]), 
       $V([0, 0, 0]), 
       $V([0, 0, 0]),
       springLen)
@@ -193,21 +193,28 @@ $(document).ready ->
     updateSpring s2
     # particle attached to s1 & s2
     p1 = new Circle(s2.x(), s2.y(), 0, {
-      color: 'black'
+      color: 'black',
+      id: 'p1'
     })
     updateParticle p1
     # particle attached to s2 endpoint
     p2 = new Circle(s2.endpoint().e(1), s2.endpoint().e(2), 0, {
-      color: 'black'
+      color: 'black',
+      id: 'p2'
     })
     updateParticle p2
 
+    # start last particle moving sideways
+    p1.speed = 100
+    p1.direction = $V([1, -1, 0])
+    s1.evel = s2.svel = p1.direction.x(p1.speed)
+    
     # s1 point is fixed
     # set particle/spring pairings for force calculations
     # end: 1 = particle at start of spring, 2 = at end of spring
     p1.springs = [{spring: s1, end: 2}, {spring: s2, end: 1}]
     p2.springs = [{spring: s2, end: 2}]
-    
+
     objects = [s1, s2, p1, p2]
     updateObjectsFn = updateMultiSpringSim
     # start animation
@@ -230,93 +237,94 @@ $(document).ready ->
           canvas.drawLineFromPoints obj.pnt1, obj.pnt2
           
   queueOutput = (txt) ->
+    console.log txt
     drawableText.push txt
     
   checkCollisions = ->
-    return unless particle?
-    
-    # Check for particle bounce against edges
-    l = particle.pos
-    pr = particle.radius
-    change = false
-    # check x
-    if l.e(1) < pr
-      l.elements[0] += (pr - l.e(1)) * 2
-      particle.direction.elements[0] = Math.abs(particle.direction.e(1))
-      change = true
-    else if l.e(1) > (canvas.width - pr)
-      l.elements[0] -= Math.abs((l.e(1) - canvas.width - pr) * 2)
-      particle.direction.elements[0] = -Math.abs(particle.direction.e(1))
-      change = true
-    # check y
-    if l.e(2) < pr
-      l.elements[1] += (pr - l.e(2)) * 2
-      particle.direction.elements[1] = Math.abs(particle.direction.e(2))
-      change = true
-    else if l.e(2) > (canvas.height - pr)
-      l.elements[1] -= Math.abs((l.e(2) - canvas.height - pr) * 2)
-      particle.direction.elements[1] = -Math.abs(particle.direction.e(2))
-      change = true
-    
-    # double check
-    if change
+    for p in objects when p.name == 'Circle'
+      # Check for particle bounce against edges
+      l = p.pos
+      pr = p.radius
+      change = false
+      # check x
       if l.e(1) < pr
-        l.elements[0] = pr
-        particle.direction.elements[0] = 0
+        l.elements[0] += (pr - l.e(1)) * 2
+        p.direction.elements[0] = Math.abs(p.direction.e(1))
+        change = true
       else if l.e(1) > (canvas.width - pr)
-        l.elements[0] = canvas.width - pr
-        particle.direction.elements[0] = 0
+        l.elements[0] -= Math.abs((l.e(1) - canvas.width - pr) * 2)
+        p.direction.elements[0] = -Math.abs(p.direction.e(1))
+        change = true
+      # check y
       if l.e(2) < pr
-        l.elements[1] = pr
-        particle.direction.elements[1] = 0
+        l.elements[1] += (pr - l.e(2)) * 2
+        p.direction.elements[1] = Math.abs(p.direction.e(2))
+        change = true
       else if l.e(2) > (canvas.height - pr)
-        l.elements[1] = canvas.height - pr
-        particle.direction.elements[1] = 0
-      
-      particle.pos = l
-      spring.pnt2 = l if spring?
+        l.elements[1] -= Math.abs((l.e(2) - canvas.height - pr) * 2)
+        p.direction.elements[1] = -Math.abs(p.direction.e(2))
+        change = true
     
+      # double check
+      if change
+        if l.e(1) < pr
+          l.elements[0] = pr
+          p.direction.elements[0] = 0
+        else if l.e(1) > (canvas.width - pr)
+          l.elements[0] = canvas.width - pr
+          p.direction.elements[0] = 0
+        if l.e(2) < pr
+          l.elements[1] = pr
+          p.direction.elements[1] = 0
+        else if l.e(2) > (canvas.height - pr)
+          l.elements[1] = canvas.height - pr
+          p.direction.elements[1] = 0
+      
+        p.pos = l
+        if p.springs?
+          updateConnectingSprings(p)
+        else if spring?
+          spring.pnt2 = l
+    
+  # update spring endpoint(s) with particle's new position & velocity
+  updateConnectingSprings = (p) ->
+    for sp in p.springs
+      if sp.end == 1
+        sp.spring.pnt1 = p.pos
+        sp.spring.svel = p.velocity
+      else
+        sp.spring.pnt2 = p.pos
+        sp.spring.evel = p.velocity
+              
   # calculate article position/speed from springs force & gravity
   # @param {Circle} particle
   # @param {Number} ts timestep
-  updateParticleFromSpringForces = (p, ts) ->
-    # update spring endpoint with particle's new position & velocity
-    updateSpringEndProps = (spring, end, pos, vel) ->
-      if end == 1
-        spring.pnt1 = pos
-        spring.svel = vel
-      else
-        spring.pnt2 = pos
-        spring.evel = vel
-        
+  updateParticleFromSpringForces = (p, ts) ->        
     ten = $V([0, p.mass * gravity, 0])
     for sp in p.springs
       f = sp.spring.forceOnEndpoint({reverse: sp.end == 1})
       if f == Spring.BOUNCE
         console.log "BOUNCE!"
         # resolve collision
-        collisions.resolveCollisionFixed p, sp.spring.pnt2.subtract(sp.spring.pnt1).toUnitVector()
-        p.speed = p.velocity.mag()
-        p.direction = p.velocity.toUnitVector()
-        #updateSpringEndProps sp.spring, sp.end, p.pos, p.velocity
-        #return updateParticleFromSpringForces(p, ts)
-        break
+        console.log "pre-bounce direction (#{p.id}): #{p.direction.inspect()}"
+        collisions.resolveCollisionFixed p, sp.spring.toVector()
+        p.pos = p.pos.add(p.direction.x(p.speed*ts))
+        updateConnectingSprings p
+        console.log "new direction (#{p.id}): #{p.direction.inspect()}"
+        updateParticleFromSpringForces(p, ts)
+        return
       else
         ten = ten.add(f)
     
-    return if f == Spring.BOUNCE
     # apply force to particle
     acc = ten.divide(p.mass)
-    queueOutput "force on particle from spring: #{f.inspect()}"
+    console.log "acceleration (#{p.id}): #{acc.inspect()}"
     
     p.pos = p.pos.add(p.direction.x(p.speed*ts)).add(acc.x(ts*ts/2))
-    p.velocity = p.velocity.add(acc.x(ts))
-    p.speed = p.velocity.mag()
-    p.direction = p.velocity.toUnitVector()
+    p.setVelocity p.velocity.add(acc.x(ts))
+    updateConnectingSprings p
     
-    # Update springs' endpoint properties
-    for sp in p.springs
-      updateSpringEndProps sp.spring, sp.end, p.pos, p.velocity
+    console.log "new direction (#{p.id}): #{p.direction.inspect()}"
 
   # update function for force simulation
   updateForceSim = (ts) ->
@@ -376,8 +384,9 @@ $(document).ready ->
       elapsed = (timeNow - lastTime) / 1000
       elapsed = 0.1 if elapsed > 0.1
       drawableText = []
-      checkCollisions()
+  
       updateObjectsFn.call(@, elapsed)
+      checkCollisions()
       
     lastTime = timeNow
 

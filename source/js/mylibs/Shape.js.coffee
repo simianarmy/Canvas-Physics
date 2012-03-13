@@ -93,6 +93,8 @@ class Shape
     
   setVelocity: (vel) ->
     @velocity = vel.dup()
+    @speed = @velocity.mag()
+    @direction = @velocity.toUnitVector()
     
   # moment of inertia
   MOI: ->

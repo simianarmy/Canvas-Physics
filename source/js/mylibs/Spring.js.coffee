@@ -93,6 +93,9 @@ class Spring extends Line
     
     vec.x(f)
     
+  toVector: ->
+    @pnt2.subtract(@pnt1).toUnitVector()
+    
   toString: ->
     "Spring at #{@pnt1.inspect()}"
 
