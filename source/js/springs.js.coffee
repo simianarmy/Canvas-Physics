@@ -41,6 +41,7 @@ $(document).ready ->
   drawableText = []
   spring = null
   particle = null
+  walls = []
   # mouse throwing variables
   mouseOnBall = false
   lastDragPoint = null
@@ -69,6 +70,11 @@ $(document).ready ->
     
     spring? && updateSpring(spring)
     particle? && updateParticle(particle)
+    walls = [new Line(0, 0, canvas.width, 0),
+      new Line(canvas.width, 0, 0, canvas.height),
+      new Line(0, 0, 0, -canvas.height),
+      new Line(0, canvas.height, canvas.width, 0)
+      ]
     
   # update spring properties (from controls)
   updateSpring = (spring) ->
@@ -181,7 +187,7 @@ $(document).ready ->
     sim = 'multi'
     
     # Start w/ 2 springs & 2 particles
-    s1 = new Spring($V([canvas.width/2, canvas.height/2, 0]), $V([0, -springLen, 0]), 
+    s1 = new Spring($V([canvas.width/2, canvas.height-40, 0]), $V([0, -springLen, 0]), 
       $V([0, 0, 0]), 
       $V([0, 0, 0]),
       springLen)
@@ -191,6 +197,13 @@ $(document).ready ->
       $V([0, 0, 0]),
       springLen)
     updateSpring s2
+    
+    # particle attached to s1 & s2
+    pa = new Circle(s1.x(), s1.y(), 0, {
+      color: 'black',
+      id: 'p0'
+    })
+    updateParticle pa
     # particle attached to s1 & s2
     p1 = new Circle(s2.x(), s2.y(), 0, {
       color: 'black',
@@ -205,17 +218,18 @@ $(document).ready ->
     updateParticle p2
 
     # start last particle moving sideways
-    p1.speed = 100
-    p1.direction = $V([1, -1, 0])
-    s1.evel = s2.svel = p1.direction.x(p1.speed)
+    p2.speed = 100
+    p2.direction = $V([1, -1, 0])
+    s2.evel = p2.direction.x(p2.speed)
     
     # s1 point is fixed
     # set particle/spring pairings for force calculations
     # end: 1 = particle at start of spring, 2 = at end of spring
+    pa.springs = [{spring: s1, end: 1}]
     p1.springs = [{spring: s1, end: 2}, {spring: s2, end: 1}]
     p2.springs = [{spring: s2, end: 2}]
 
-    objects = [s1, s2, p1, p2]
+    objects = [s1, s2, pa, p1, p2]
     updateObjectsFn = updateMultiSpringSim
     # start animation
     paused = false
@@ -240,51 +254,22 @@ $(document).ready ->
     console.log txt
     drawableText.push txt
     
-  checkCollisions = ->
+  checkCollisions = (ts) ->
     for p in objects when p.name == 'Circle'
       # Check for particle bounce against edges
-      l = p.pos
-      pr = p.radius
-      change = false
-      # check x
-      if l.e(1) < pr
-        l.elements[0] += (pr - l.e(1)) * 2
-        p.direction.elements[0] = Math.abs(p.direction.e(1))
-        change = true
-      else if l.e(1) > (canvas.width - pr)
-        l.elements[0] -= Math.abs((l.e(1) - canvas.width - pr) * 2)
-        p.direction.elements[0] = -Math.abs(p.direction.e(1))
-        change = true
-      # check y
-      if l.e(2) < pr
-        l.elements[1] += (pr - l.e(2)) * 2
-        p.direction.elements[1] = Math.abs(p.direction.e(2))
-        change = true
-      else if l.e(2) > (canvas.height - pr)
-        l.elements[1] -= Math.abs((l.e(2) - canvas.height - pr) * 2)
-        p.direction.elements[1] = -Math.abs(p.direction.e(2))
-        change = true
-    
-      # double check
-      if change
-        if l.e(1) < pr
-          l.elements[0] = pr
-          p.direction.elements[0] = 0
-        else if l.e(1) > (canvas.width - pr)
-          l.elements[0] = canvas.width - pr
-          p.direction.elements[0] = 0
-        if l.e(2) < pr
-          l.elements[1] = pr
-          p.direction.elements[1] = 0
-        else if l.e(2) > (canvas.height - pr)
-          l.elements[1] = canvas.height - pr
-          p.direction.elements[1] = 0
-      
-        p.pos = l
-        if p.springs?
-          updateConnectingSprings(p)
-        else if spring?
-          spring.pnt2 = l
+      for w in walls
+        res = collisions.circleWallCollision p, w
+        console.log "p#{p.id} vs wall in #{res[0]}"
+        if collisions.isImpendingCollision(res[0]) || (res[0] == collisions.EMBEDDED)
+          collisions.resolveCollisionFixed p, res[1]
+          p.moveByTime(ts) # move particle away from wall
+          if p.springs?
+            # spring(s) endpoint property update
+            updateConnectingSprings(p)
+          else if spring?
+            spring.pnt2 = l
+            
+          break        
     
   # update spring endpoint(s) with particle's new position & velocity
   updateConnectingSprings = (p) ->
@@ -299,32 +284,30 @@ $(document).ready ->
   # calculate article position/speed from springs force & gravity
   # @param {Circle} particle
   # @param {Number} ts timestep
-  updateParticleFromSpringForces = (p, ts) ->        
+  updateParticleFromSpringForces = (p, ts, count=1) ->
+    return if count > 10 # prevent inf. recursion
     ten = $V([0, p.mass * gravity, 0])
     for sp in p.springs
       f = sp.spring.forceOnEndpoint({reverse: sp.end == 1})
       if f == Spring.BOUNCE
         console.log "BOUNCE!"
         # resolve collision
-        console.log "pre-bounce direction (#{p.id}): #{p.direction.inspect()}"
         collisions.resolveCollisionFixed p, sp.spring.toVector()
         p.pos = p.pos.add(p.direction.x(p.speed*ts))
         updateConnectingSprings p
-        console.log "new direction (#{p.id}): #{p.direction.inspect()}"
-        updateParticleFromSpringForces(p, ts)
+        #console.log "new direction (#{p.id}): #{p.direction.inspect()}"
+        updateParticleFromSpringForces(p, ts, count + 1)
         return
       else
         ten = ten.add(f)
     
     # apply force to particle
-    acc = ten.divide(p.mass)
-    console.log "acceleration (#{p.id}): #{acc.inspect()}"
-    
+    acc = ten.divide(p.mass)    
     p.pos = p.pos.add(p.direction.x(p.speed*ts)).add(acc.x(ts*ts/2))
     p.setVelocity p.velocity.add(acc.x(ts))
     updateConnectingSprings p
     
-    console.log "new direction (#{p.id}): #{p.direction.inspect()}"
+    #console.log "new direction (#{p.id}): #{p.direction.inspect()}"
 
   # update function for force simulation
   updateForceSim = (ts) ->
@@ -386,7 +369,7 @@ $(document).ready ->
       drawableText = []
   
       updateObjectsFn.call(@, elapsed)
-      checkCollisions()
+      checkCollisions(elapsed)
       
     lastTime = timeNow
 

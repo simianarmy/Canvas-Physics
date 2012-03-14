@@ -83,7 +83,7 @@ collisions = (->
     
     if (Math.abs(an) < c.radius)
       console.log "WALL EMBEDDED"
-      return collisions.EMBEDDED
+      return [collisions.EMBEDDED, n]
     
     r = null
     v = 0
@@ -413,7 +413,7 @@ collisions = (->
   #
   # Sets velocity of an object after an elastic collision along normal
   # @param {Shape} ob colliding object
-  # @param {Vector} n collision along normal
+  # @param {Vector} n collision along vector
   resolveCollisionFixed = (ob, n) ->
     u = ob.velocity
     ob.setVelocity u.subtract(u.componentVector(n).x(2))
@@ -632,6 +632,7 @@ collisions = (->
   # Return public functions
   {checkCollisions
   detectCollision
+  circleWallCollision
   isImpendingCollision
   resolveCollision
   resolveCollisionFixed
