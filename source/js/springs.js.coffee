@@ -72,8 +72,8 @@ $(document).ready ->
     particle? && updateParticle(particle)
     walls = [new Line(0, 0, canvas.width, 0),
       new Line(canvas.width, 0, 0, canvas.height),
-      new Line(0, 0, 0, -canvas.height),
-      new Line(0, canvas.height, canvas.width, 0)
+      new Line(0, canvas.height, 0, -canvas.height),
+      new Line(canvas.width, canvas.height, -canvas.width, 0)
       ]
     
   # update spring properties (from controls)
@@ -219,7 +219,7 @@ $(document).ready ->
 
     # start last particle moving sideways
     p2.speed = 100
-    p2.direction = $V([1, -1, 0])
+    p2.direction = $V([1, 1, 0])
     s2.evel = p2.direction.x(p2.speed)
     
     # s1 point is fixed
@@ -256,21 +256,41 @@ $(document).ready ->
     
   checkCollisions = (ts) ->
     for p in objects when p.name == 'Circle'
+      changed = false
       # Check for particle bounce against edges
       for w in walls
         res = collisions.circleWallCollision p, w
         console.log "p#{p.id} vs wall in #{res[0]}"
+        if res[0] == collisions.EMBEDDED
+          console.log "embedded - calculate normal"
         if collisions.isImpendingCollision(res[0]) || (res[0] == collisions.EMBEDDED)
           collisions.resolveCollisionFixed p, res[1]
           p.moveByTime(ts) # move particle away from wall
-          if p.springs?
-            # spring(s) endpoint property update
-            updateConnectingSprings(p)
-          else if spring?
-            spring.pnt2 = l
+          changed = true
+          
+          # Sanity check for collison resolution
+          if p.x() < p.radius
+            p.pos.elements[0] = p.radius
+            p.direction.elements[0] = 0
+          else if p.x() > canvas.width - p.radius
+            p.pos.elements[0] = canvas.width - p.radius
+            p.direction.elements[0] = 0
+          if p.y() < p.radius
+            p.pos.elements[0] = p.radius
+            p.direction.elements[1] = 0
+          else if p.y() > canvas.height - p.radius
+            p.pos.elements[1] = canvas.height - p.radius
+            p.direction.elements[2] = 0
             
           break        
-    
+      
+      if changed
+        if p.springs?
+          # spring(s) endpoint property update
+          updateConnectingSprings(p)
+        else if spring?
+          spring.pnt2 = p.pos
+
   # update spring endpoint(s) with particle's new position & velocity
   updateConnectingSprings = (p) ->
     for sp in p.springs
@@ -285,24 +305,25 @@ $(document).ready ->
   # @param {Circle} particle
   # @param {Number} ts timestep
   updateParticleFromSpringForces = (p, ts, count=1) ->
-    return if count > 10 # prevent inf. recursion
     ten = $V([0, p.mass * gravity, 0])
-    for sp in p.springs
-      f = sp.spring.forceOnEndpoint({reverse: sp.end == 1})
-      if f == Spring.BOUNCE
-        console.log "BOUNCE!"
-        # resolve collision
-        collisions.resolveCollisionFixed p, sp.spring.toVector()
-        p.pos = p.pos.add(p.direction.x(p.speed*ts))
-        updateConnectingSprings p
-        #console.log "new direction (#{p.id}): #{p.direction.inspect()}"
-        updateParticleFromSpringForces(p, ts, count + 1)
-        return
-      else
-        ten = ten.add(f)
+    if count < 10 # prevent inf. recursion
+      for sp in p.springs
+        f = sp.spring.forceOnEndpoint({reverse: sp.end == 1})
+        if f == Spring.BOUNCE
+          queueOutput "#{p.id} BOUNCE!"
+          # resolve collision
+          collisions.resolveCollisionFixed p, sp.spring.toVector()
+          p.pos = p.pos.add(p.direction.x(p.speed*ts))
+          updateConnectingSprings p
+          #console.log "new direction (#{p.id}): #{p.direction.inspect()}"
+          updateParticleFromSpringForces(p, ts, count + 1)
+          return
+        else
+          ten = ten.add(f)
     
     # apply force to particle
-    acc = ten.divide(p.mass)    
+    queueOutput "tension on p #{p.id}: #{ten.inspect()}"
+    acc = ten.divide(p.mass)  
     p.pos = p.pos.add(p.direction.x(p.speed*ts)).add(acc.x(ts*ts/2))
     p.setVelocity p.velocity.add(acc.x(ts))
     updateConnectingSprings p
