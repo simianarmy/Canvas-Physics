@@ -306,24 +306,30 @@ $(document).ready ->
   # @param {Number} ts timestep
   updateParticleFromSpringForces = (p, ts, count=1) ->
     ten = $V([0, p.mass * gravity, 0])
-    if count < 10 # prevent inf. recursion
-      for sp in p.springs
-        f = sp.spring.forceOnEndpoint({reverse: sp.end == 1})
-        if f == Spring.BOUNCE
-          queueOutput "#{p.id} BOUNCE!"
-          # resolve collision
-          collisions.resolveCollisionFixed p, sp.spring.toVector()
-          p.pos = p.pos.add(p.direction.x(p.speed*ts))
-          updateConnectingSprings p
-          #console.log "new direction (#{p.id}): #{p.direction.inspect()}"
-          updateParticleFromSpringForces(p, ts, count + 1)
-          return
-        else
-          ten = ten.add(f)
     
+    for sp in p.springs
+      f = sp.spring.forceOnEndpoint({reverse: sp.end == 1})
+      if f == Spring.BOUNCE
+        #queueOutput "#{p.id} BOUNCE!"
+        # resolve collision
+        collisions.resolveCollisionFixed p, sp.spring.toVector()
+        p.pos = p.pos.add(p.direction.x(p.speed*ts))
+        updateConnectingSprings p
+        #console.log "new direction (#{p.id}): #{p.direction.inspect()}"
+        if count < 10 # prevent inf. recursion
+          updateParticleFromSpringForces(p, ts, count + 1)
+        else
+          console.log "BOUNCE MAX!"
+        return
+      else
+        ten = ten.add(f)
+  
     # apply force to particle
     queueOutput "tension on p #{p.id}: #{ten.inspect()}"
-    acc = ten.divide(p.mass)  
+    acc = ten.divide(p.mass)
+    # Try to dampen serious accelerations
+    acc.elements[0] -= 100 if acc.e(1) >= 500
+    acc.elements[1] -= 100 if acc.e(2) >= 500
     p.pos = p.pos.add(p.direction.x(p.speed*ts)).add(acc.x(ts*ts/2))
     p.setVelocity p.velocity.add(acc.x(ts))
     updateConnectingSprings p
