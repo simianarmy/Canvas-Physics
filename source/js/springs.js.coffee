@@ -327,7 +327,7 @@ $(document).ready ->
     # apply force to particle
     queueOutput "tension on p #{p.id}: #{ten.inspect()}"
     acc = ten.divide(p.mass)
-    # Try to dampen serious accelerations
+    # Try to dampen serious accelerations - doesn't help :(
     acc.elements[0] -= 100 if acc.e(1) >= 500
     acc.elements[1] -= 100 if acc.e(2) >= 500
     p.pos = p.pos.add(p.direction.x(p.speed*ts)).add(acc.x(ts*ts/2))

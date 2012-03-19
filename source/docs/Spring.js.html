@@ -1,0 +1,178 @@
+<!DOCTYPE html>  <html> <head>   <title>Spring.js.coffee</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="Array.js.html">                 Array.js.coffee               </a>                                           <a class="source" href="Canvas.js.html">                 Canvas.js.coffee               </a>                                           <a class="source" href="Circle.js.html">                 Circle.js.coffee               </a>                                           <a class="source" href="Line.js.html">                 Line.js.coffee               </a>                                           <a class="source" href="Math.js.html">                 Math.js.coffee               </a>                                           <a class="source" href="Polygon.js.html">                 Polygon.js.coffee               </a>                                           <a class="source" href="PoolTable.html">                 PoolTable.coffee               </a>                                           <a class="source" href="Rectangle.js.html">                 Rectangle.js.coffee               </a>                                           <a class="source" href="Shape.js.html">                 Shape.js.coffee               </a>                                           <a class="source" href="Spring.js.html">                 Spring.js.coffee               </a>                                           <a class="source" href="canvasEvents.js.html">                 canvasEvents.js.coffee               </a>                                           <a class="source" href="circles_scene.js.html">                 circles_scene.js.coffee               </a>                                           <a class="source" href="collisions.js.html">                 collisions.js.coffee               </a>                                           <a class="source" href="particles.js.html">                 particles.js.coffee               </a>                                           <a class="source" href="vec.js.html">                 vec.js.coffee               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               Spring.js.coffee             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>@class Spring</p>
+
+<p>Represents a spring object with methods for resolving physics</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>= require ./Line</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nx">Spring</span> <span class="k">extends</span> <span class="nx">Line</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Spring compressiveness values</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">Spring.LOOSE = </span><span class="mi">1</span>
+  <span class="nv">Spring.RIGID = </span><span class="mi">2</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>force value constant</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">Spring.BOUNCE = </span><span class="o">-</span><span class="mi">1</span>
+  <span class="nv">Spring.Motion = </span><span class="p">{</span>
+    <span class="nv">SHM: </span><span class="s1">&#39;shm&#39;</span>
+    <span class="nv">UNDERDAMPED: </span><span class="s1">&#39;underdamped&#39;</span>
+    <span class="nv">CRITICAL: </span><span class="s1">&#39;critical&#39;</span>
+    <span class="nv">OVERDAMPED: </span><span class="s1">&#39;overdamped&#39;</span>      
+  <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>@param {Vector} pnt1 starting position vector
+@param {Vector} vec direction &amp; length of spring vector
+@param {Vector} v1 velocity at starting point
+@param {Vector] v2 velocity at end point
+@param {Object} opts object containing additional properties</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">constructor: </span><span class="nf">(@pnt1, @vec, v1, v2, @length, opts={}) -&gt;</span>
+    <span class="k">super</span><span class="p">(</span><span class="nx">@pnt1</span><span class="p">.</span><span class="nx">e</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nx">@pnt1</span><span class="p">.</span><span class="nx">e</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="nx">@vec</span><span class="p">.</span><span class="nx">e</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="nx">@vec</span><span class="p">.</span><span class="nx">e</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="nx">opts</span><span class="p">)</span>
+    <span class="vi">@svel = </span><span class="nx">v1</span><span class="p">.</span><span class="nx">dup</span><span class="p">()</span>
+    <span class="vi">@evel = </span><span class="nx">v2</span><span class="p">.</span><span class="nx">dup</span><span class="p">()</span>
+    <span class="err">@</span><span class="p">[</span><span class="nx">x</span><span class="p">]</span> <span class="o">=</span> <span class="nx">val</span> <span class="k">for</span> <span class="nx">x</span><span class="p">,</span> <span class="nx">val</span> <span class="k">of</span> <span class="nx">opts</span> <span class="c1"># Save optional properties</span>
+    <span class="vi">@name = </span><span class="s1">&#39;Spring&#39;</span>
+    <span class="vi">@pnt2 = </span><span class="nx">@endpoint</span><span class="p">()</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>Set property defaults</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">@elasticity</span>       <span class="o">?=</span> <span class="mi">1</span>
+    <span class="nx">@damping</span>          <span class="o">?=</span> <span class="mi">0</span>
+    <span class="nx">@elasticLimit</span>     <span class="o">?=</span> <span class="mi">1</span>
+    <span class="nx">@compressiveness</span>  <span class="o">?=</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">RIGID</span>
+    <span class="nx">@compressive</span>      <span class="o">?=</span> <span class="kc">false</span>
+    <span class="nx">@minLength</span>        <span class="o">?=</span> <span class="mi">1</span>
+  
+  <span class="nv">currentLength: </span><span class="o">-&gt;</span>
+     <span class="nx">@pnt1</span><span class="p">.</span><span class="nx">subtract</span><span class="p">(</span><span class="nx">@pnt2</span><span class="p">).</span><span class="nx">mag</span><span class="p">()</span>
+     
+  <span class="nv">isCompressive: </span><span class="o">=&gt;</span>
+    <span class="nx">@compressive</span> <span class="o">||</span> <span class="p">(</span><span class="nx">@compressiveness</span> <span class="o">==</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">RIGID</span><span class="p">)</span>
+    </pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>General purpose function to determine force on a particle due to the 
+spring (at spring endpoint). <br />
+This function must be used when neither endpoint of the spring is fixed in place.
+@params: {Object} opts options
+@return {Vector} force vector</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">forceOnEndpoint: </span><span class="nf">(opts={}) -&gt;</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <p>Caller can pass reverse: true to calculate force on the 'start' 
+end of the spring</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">reverse</span>
+      <span class="nv">pnt1 = </span><span class="nx">@pnt2</span>
+      <span class="nv">pnt2 = </span><span class="nx">@pnt1</span>
+      <span class="nv">vel1 = </span><span class="nx">@evel</span>
+      <span class="nv">vel2 = </span><span class="nx">@svel</span>
+    <span class="k">else</span>
+      <span class="nv">pnt1 = </span><span class="nx">@pnt1</span>
+      <span class="nv">pnt2 = </span><span class="nx">@pnt2</span>
+      <span class="nv">vel1 = </span><span class="nx">@svel</span>
+      <span class="nv">vel2 = </span><span class="nx">@evel</span>
+      
+    <span class="nv">elasticity = </span><span class="mi">0</span>
+    <span class="nv">damping = </span><span class="mi">0</span>
+    <span class="nv">v = </span><span class="nx">pnt1</span><span class="p">.</span><span class="nx">subtract</span><span class="p">(</span><span class="nx">pnt2</span><span class="p">)</span>
+    <span class="nv">d = </span><span class="nx">v</span><span class="p">.</span><span class="nx">mag</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nx">Vector</span><span class="p">.</span><span class="nx">Zero</span><span class="p">()</span> <span class="k">if</span> <span class="nx">d</span> <span class="o">==</span> <span class="mi">0</span>
+    </pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>loose elastics have no force when compressed</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="nx">d</span> <span class="o">&lt;=</span> <span class="nx">@length</span>
+      <span class="k">return</span> <span class="nx">Vector</span><span class="p">.</span><span class="nx">Zero</span><span class="p">()</span> <span class="k">if</span> <span class="nx">@compressiveness</span> <span class="o">==</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">LOOSE</span>
+      </pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <p>apply 2nd elastic limit (inextensible behavior)</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="nx">d</span> <span class="o">&gt;=</span> <span class="nx">@elasticLimit</span><span class="o">*</span><span class="mf">1.2</span> <span class="o">||</span>
+       <span class="nx">d</span> <span class="o">&lt;=</span> <span class="nx">@minLength</span><span class="o">*</span><span class="mf">0.9</span> <span class="o">||</span>
+       <span class="p">(</span><span class="nx">d</span> <span class="o">&lt;=</span> <span class="nx">@length</span><span class="o">*</span><span class="mf">0.9</span> <span class="o">and</span> <span class="nx">@compressiveness</span> <span class="o">==</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">RIGID</span><span class="p">)</span>
+      <span class="k">return</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">BOUNCE</span>
+    </pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <p>apply 1st elastic limit (increased force and damping)</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="p">(</span><span class="nx">d</span> <span class="o">&gt;=</span> <span class="nx">@elasticLimit</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="nx">d</span> <span class="o">&lt;=</span> <span class="nx">@minLength</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="nx">d</span> <span class="o">&lt;=</span> <span class="nx">@length</span> <span class="o">and</span> <span class="nx">@compressiveness</span> <span class="o">==</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">RIGID</span><span class="p">)</span>
+      <span class="nv">elasticity = </span><span class="nx">@elasticity</span> <span class="o">*</span> <span class="mi">20</span>
+      <span class="nv">damping = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">max</span><span class="p">(</span><span class="nx">@damping</span><span class="o">*</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+    </pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <p>calculate force by Hooke's law</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nv">e = </span><span class="nx">d</span> <span class="o">-</span> <span class="nx">@length</span>
+    <span class="nv">vec = </span><span class="nx">v</span><span class="p">.</span><span class="nx">divide</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span>
+    <span class="nv">f = </span><span class="k">if</span> <span class="nx">@damping</span> <span class="o">&gt;</span> <span class="mi">0</span>
+      <span class="nv">comp = </span><span class="nx">vel1</span><span class="p">.</span><span class="nx">subtract</span><span class="p">(</span><span class="nx">vel2</span><span class="p">).</span><span class="nx">component</span><span class="p">(</span><span class="nx">vec</span><span class="p">)</span>
+      <span class="nx">@damping</span> <span class="o">*</span> <span class="nx">comp</span> <span class="o">+</span> <span class="nx">@elasticity</span> <span class="o">*</span> <span class="nx">e</span>
+    <span class="k">else</span>
+      <span class="nx">elasticity</span> <span class="o">*</span> <span class="nx">e</span>
+    
+    <span class="nx">vec</span><span class="p">.</span><span class="nx">x</span><span class="p">(</span><span class="nx">f</span><span class="p">)</span>
+    
+  <span class="nv">toVector: </span><span class="o">-&gt;</span>
+    <span class="nx">@pnt2</span><span class="p">.</span><span class="nx">subtract</span><span class="p">(</span><span class="nx">@pnt1</span><span class="p">).</span><span class="nx">toUnitVector</span><span class="p">()</span>
+    
+  <span class="nv">toString: </span><span class="o">-&gt;</span>
+    <span class="s2">&quot;Spring at #{@pnt1.inspect()}&quot;</span></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <p>Static functions</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <p>Pure Damped Harmonic Motion (DHM) oscillator functions
+Using intial position and velocity and a time, will calculate position and 
+velocity at that time.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">Spring.initialDHMParams = </span><span class="o">-&gt;</span>
+  <span class="nv">motion: </span><span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">SHM</span>
+  <span class="nv">phase: </span><span class="mi">0</span>
+  <span class="nv">amp: </span><span class="mi">0</span></pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <p>Calculates the params and the form of the motion
+@param {Number} initPos initial position
+@param {Number} initVel initial velocity
+@param {Number} elasticity of the spring
+@param {Number} damping of the spring
+@return {Object} a list of parameters for an oscillation, to be used in the 
+  getOscillatorPosition and getOscillatorSpeed functions:
+  type of motion, phase (p), amplitude (C), and optionally a, r1, r2</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">Spring.calculateDHMParams = </span><span class="nf">(initPos, initVel, elasticity, damping)-&gt;</span>
+  <span class="nv">omega = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">elasticity</span><span class="p">)</span>
+  <span class="nv">d = </span><span class="nx">damping</span> <span class="err">/ 2</span>
+  <span class="nv">alpha = </span><span class="nx">d</span> <span class="o">*</span> <span class="nx">d</span> <span class="o">-</span> <span class="nx">elasticity</span>
+  <span class="k">if</span> <span class="nx">d</span> <span class="o">==</span> <span class="mi">0</span> <span class="c1"># no damping: use SHM</span>
+    <span class="nv">p = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">atan2</span><span class="p">(</span><span class="nx">omega</span> <span class="o">*</span> <span class="nx">initPos</span><span class="p">,</span> <span class="nx">initVel</span><span class="p">)</span>
+    <span class="nv">c = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">elasticity</span> <span class="o">*</span> <span class="nx">initPos</span> <span class="o">*</span> <span class="nx">initPos</span> <span class="o">+</span> <span class="nx">initVel</span> <span class="o">*</span> <span class="nx">initVel</span><span class="p">)</span> <span class="o">/</span> <span class="nx">omega</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="nv">motion: </span><span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">SHM</span>
+      <span class="nv">phase: </span><span class="nx">p</span>
+      <span class="nv">amp: </span><span class="nx">c</span>
+    <span class="p">}</span>
+  <span class="k">else</span> <span class="k">if</span> <span class="nx">d</span> <span class="o">&lt;</span> <span class="nx">omega</span> <span class="c1"># underdamped</span>
+    <span class="nv">v = </span><span class="nx">initVel</span> <span class="o">+</span> <span class="nx">d</span> <span class="o">*</span> <span class="nx">initPos</span>
+    <span class="nv">p = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">atan2</span><span class="p">(</span><span class="nx">initPos</span> <span class="o">*</span> <span class="nx">omega</span><span class="p">,</span> <span class="nx">v</span><span class="p">)</span>
+    <span class="nv">s = </span><span class="nx">initPos</span> <span class="o">*</span> <span class="nx">initPos</span> <span class="o">*</span> <span class="nx">elasticity</span> <span class="o">+</span> <span class="nx">v</span> <span class="o">*</span> <span class="nx">v</span>
+    <span class="nv">c = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">s</span><span class="p">)</span> <span class="o">/</span> <span class="nx">omega</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="nv">motion: </span><span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">UNDERDAMPED</span>
+      <span class="nv">phase: </span><span class="nx">p</span>
+      <span class="nv">amp: </span><span class="nx">c</span>
+      <span class="nv">a: </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="o">-</span><span class="nx">alpha</span><span class="p">)</span>
+    <span class="p">}</span>
+  <span class="k">else</span> <span class="k">if</span> <span class="nx">d</span> <span class="o">==</span> <span class="nx">omega</span> <span class="c1"># critical</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="nv">motion: </span><span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">CRITICAL</span>
+      <span class="nv">phase: </span><span class="nx">initPos</span>
+      <span class="nv">amp: </span><span class="nx">omega</span> <span class="o">*</span> <span class="nx">initPos</span> <span class="o">+</span> <span class="nx">initVel</span>
+    <span class="p">}</span>
+  <span class="k">else</span> <span class="c1"># overdamping</span>
+    <span class="nv">sq = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">alpha</span><span class="p">)</span>
+    <span class="nv">r1 = </span><span class="o">-</span><span class="nx">d</span> <span class="o">-</span> <span class="nx">sq</span>
+    <span class="nv">r2 = </span><span class="o">-</span><span class="nx">d</span> <span class="o">+</span> <span class="nx">sq</span>
+    <span class="nv">a = </span><span class="p">(</span><span class="nx">r2</span> <span class="o">*</span> <span class="nx">initPos</span> <span class="o">-</span> <span class="nx">initVel</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nx">sq</span><span class="p">)</span>
+    <span class="nv">b = </span><span class="o">-</span><span class="p">(</span><span class="nx">r1</span> <span class="o">*</span> <span class="nx">initPos</span> <span class="o">-</span> <span class="nx">initVel</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nx">sq</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="nv">motion: </span><span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">OVERDAMPED</span>
+      <span class="nv">phase: </span><span class="nx">a</span>
+      <span class="nv">amp: </span><span class="nx">b</span>
+      <span class="nv">r1: </span><span class="nx">r1</span>
+      <span class="nv">r2: </span><span class="nx">r2</span>
+    <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-16">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-16">&#182;</a>               </div>               <p>Used in conjunction with other DHM functions.
+Parameters passed to this function must be generated by 
+calculateDHMParams().
+@param {Number} elasticity
+@param {Number} damping
+@param {Object} params values returned by calculateDHMParams
+@param {Number} time
+@return {Number} new position value</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">Spring.getOscillatorPosition = </span><span class="nf">(elasticity, damping, params, time) -&gt;</span>
+  <span class="nv">omega = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">elasticity</span><span class="p">)</span>
+  <span class="nv">d = </span><span class="nx">damping</span> <span class="err">/ 2</span>
+  
+  <span class="k">switch</span> <span class="nx">params</span><span class="p">.</span><span class="nx">motion</span>
+    <span class="k">when</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">SHM</span>
+      <span class="nx">params</span><span class="p">.</span><span class="nx">amp</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">sin</span><span class="p">(</span><span class="nx">omega</span> <span class="o">*</span> <span class="nx">time</span> <span class="o">+</span> <span class="nx">params</span><span class="p">.</span><span class="nx">phase</span><span class="p">)</span>
+    <span class="k">when</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">UNDERDAMPED</span>
+      <span class="nx">params</span><span class="p">.</span><span class="nx">amp</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">sin</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">a</span> <span class="o">*</span> <span class="nx">time</span> <span class="o">+</span> <span class="nx">params</span><span class="p">.</span><span class="nx">phase</span><span class="p">)</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">exp</span><span class="p">(</span><span class="o">-</span><span class="nx">d</span> <span class="o">*</span> <span class="nx">time</span><span class="p">)</span>
+    <span class="k">when</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">CRITICAL</span>
+      <span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">phase</span> <span class="o">+</span> <span class="nx">time</span> <span class="o">*</span> <span class="nx">params</span><span class="p">.</span><span class="nx">amp</span><span class="p">)</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">exp</span><span class="p">(</span><span class="o">-</span><span class="nx">d</span> <span class="o">*</span> <span class="nx">time</span><span class="p">)</span>
+    <span class="k">when</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">OVERDAMPED</span>
+      <span class="nx">params</span><span class="p">.</span><span class="nx">phase</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">exp</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">r1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">)</span> <span class="o">+</span> <span class="nx">params</span><span class="p">.</span><span class="nx">amp</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">exp</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">r2</span> <span class="o">*</span> <span class="nx">time</span><span class="p">)</span>
+    <span class="k">else</span>
+      <span class="k">throw</span> <span class="s2">&quot;getOscillatorPosition: Unknown oscillator motion!&quot;</span></pre></div>             </td>           </tr>                               <tr id="section-17">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-17">&#182;</a>               </div>               <p>Used in conjunction with other DHM functions.
+Parameters passed to this function must be generated by 
+calculateDHMParams().
+@param {Number} elasticity
+@param {Number} damping
+@param {Object} params values returned by calculateDHMParams
+@param {Number} time
+@param {Number} pos value from getOscillatorPosition()
+@return {Number} new speed value</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">Spring.getOscillatorSpeed = </span><span class="nf">(elasticity, damping, params, time, pos) -&gt;</span>
+  <span class="nv">omega = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">elasticity</span><span class="p">)</span>
+  <span class="nv">d = </span><span class="nx">damping</span> <span class="err">/ 2</span>
+  
+  <span class="k">switch</span> <span class="nx">params</span><span class="p">.</span><span class="nx">motion</span>
+    <span class="k">when</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">SHM</span>
+      <span class="nx">params</span><span class="p">.</span><span class="nx">amp</span> <span class="o">*</span> <span class="nx">omega</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">cos</span><span class="p">(</span><span class="nx">omega</span> <span class="o">*</span> <span class="nx">time</span> <span class="o">+</span> <span class="nx">params</span><span class="p">.</span><span class="nx">phase</span><span class="p">)</span>
+    <span class="k">when</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">UNDERDAMPED</span>
+      <span class="nx">params</span><span class="p">.</span><span class="nx">amp</span> <span class="o">*</span> <span class="nx">omega</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">cos</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">a</span> <span class="o">*</span> <span class="nx">time</span> <span class="o">+</span> <span class="nx">params</span><span class="p">.</span><span class="nx">phase</span><span class="p">)</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">exp</span><span class="p">(</span><span class="o">-</span><span class="nx">d</span> <span class="o">*</span> <span class="nx">time</span><span class="p">)</span> <span class="o">-</span> <span class="nx">d</span> <span class="o">*</span> <span class="nx">pos</span>
+    <span class="k">when</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">CRITICAL</span>
+      <span class="nx">params</span><span class="p">.</span><span class="nx">amp</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">exp</span><span class="p">(</span><span class="o">-</span><span class="nx">d</span> <span class="o">*</span> <span class="nx">time</span><span class="p">)</span> <span class="o">-</span> <span class="nx">d</span> <span class="o">*</span> <span class="nx">pos</span>
+    <span class="k">when</span> <span class="nx">Spring</span><span class="p">.</span><span class="nx">Motion</span><span class="p">.</span><span class="nx">OVERDAMPED</span>
+      <span class="nx">params</span><span class="p">.</span><span class="nx">phase</span> <span class="o">*</span> <span class="nx">params</span><span class="p">.</span><span class="nx">r1</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">exp</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">r1</span> <span class="o">*</span> <span class="nx">time</span><span class="p">)</span> <span class="o">+</span> <span class="nx">params</span><span class="p">.</span><span class="nx">amp</span> <span class="o">*</span> <span class="nx">params</span><span class="p">.</span><span class="nx">r2</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">exp</span><span class="p">(</span><span class="nx">params</span><span class="p">.</span><span class="nx">r2</span> <span class="o">*</span> <span class="nx">time</span><span class="p">)</span>
+    <span class="k">else</span>
+      <span class="k">throw</span> <span class="s2">&quot;getOscillatorSpeed: Unknown oscillator motion!&quot;</span>
+  
+<span class="nv">root = </span><span class="nx">exports</span> <span class="o">?</span> <span class="nb">window</span>
+<span class="nv">root.Spring = </span><span class="nx">Spring</span>
+    
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

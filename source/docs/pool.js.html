@@ -1,0 +1,159 @@
+<!DOCTYPE html>  <html> <head>   <title>pool.js.coffee</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="balls.js.html">                 balls.js.coffee               </a>                                           <a class="source" href="bitmap.js.html">                 bitmap.js.coffee               </a>                                           <a class="source" href="pool.js.html">                 pool.js.coffee               </a>                                           <a class="source" href="rot_collisions.js.html">                 rot_collisions.js.coffee               </a>                                           <a class="source" href="springs.js.html">                 springs.js.coffee               </a>                                           <a class="source" href="svgballs.js.html">                 svgballs.js.coffee               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               pool.js.coffee             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>pool.js.coffee</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>= require ./mylibs/PoolTable
+= require ./mylibs/canvasEvents</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">MAX_CUE_TIME        = </span><span class="mi">2</span>
+<span class="nv">MAX_BALL_SPEED      = </span><span class="mi">130</span>
+
+<span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span> <span class="o">-&gt;</span>
+  <span class="nv">shooting = </span><span class="kc">false</span>
+  <span class="nv">shotForce = </span><span class="mi">0</span>
+  <span class="nv">shotTimerID = </span><span class="kc">null</span>
+  <span class="nv">cueStart = </span><span class="mi">0</span>
+  <span class="nv">currentPlayer = </span><span class="mi">1</span>
+  <span class="nv">player1Color = player2Color = </span><span class="kc">null</span>
+  <span class="nv">winner = </span><span class="kc">null</span>
+  <span class="nv">collisionSound = </span><span class="kc">null</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>fetch and save the canvas context</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">$canvas = </span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#poolcanvas&quot;</span><span class="p">)</span>
+  <span class="nv">canvas = </span><span class="nx">$canvas</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="nv">context = </span><span class="nx">canvas</span><span class="p">.</span><span class="nx">getContext</span><span class="p">(</span><span class="s1">&#39;2d&#39;</span><span class="p">)</span>  
+  
+  <span class="nv">loadAudio = </span><span class="o">-&gt;</span>
+    <span class="nv">collisionSound = </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#ballcollisionSound&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="nx">newGame</span><span class="p">()</span>
+    
+  <span class="nv">incShotForce = </span><span class="o">-&gt;</span>
+    <span class="nv">timeNow = </span><span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nx">cueStart</span> <span class="o">!=</span> <span class="mi">0</span>
+      <span class="nv">shotForce = </span><span class="nx">timeNow</span> <span class="o">-</span> <span class="nx">cueStart</span>
+      
+    <span class="nx">updateShotData</span><span class="p">()</span>
+    <span class="nx">shoot</span><span class="p">()</span> <span class="k">if</span> <span class="nx">shotForce</span><span class="err">/1000 &gt;= MAX_CUE_TIME</span>
+  
+  <span class="nv">getCueSpeed = </span><span class="o">-&gt;</span>
+    <span class="nv">cueSpeed = </span><span class="p">(</span><span class="nx">shotForce</span> <span class="err">/ 500) * MAX_BALL_SPEED</span>
+    
+  <span class="nv">roundDecimal = </span><span class="nf">(num) -&gt;</span>
+    <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nx">num</span><span class="o">*</span><span class="mi">100</span><span class="p">)</span><span class="o">/</span><span class="mi">100</span>
+    
+  <span class="nv">shoot = </span><span class="o">-&gt;</span>
+    <span class="nx">clearInterval</span> <span class="nx">shotTimerID</span>
+    <span class="nx">sc</span><span class="p">.</span><span class="nx">makeShot</span> <span class="nx">currentPlayer</span><span class="p">,</span> <span class="nx">getCueSpeed</span><span class="p">()</span>
+    <span class="nx">endShot</span><span class="p">()</span>
+    
+  <span class="nv">startShot = </span><span class="o">-&gt;</span>
+    <span class="nv">shotForce = </span><span class="mi">0</span>
+    <span class="nv">cueStart = </span><span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">()</span>
+    <span class="nv">shotTimerID = </span><span class="nx">setInterval</span><span class="p">(</span><span class="nx">incShotForce</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="nv">shooting = </span><span class="kc">true</span>
+    
+  <span class="nv">endShot = </span><span class="o">-&gt;</span>
+    <span class="nv">shooting = </span><span class="kc">false</span>
+    <span class="nv">shotForce = </span><span class="mi">0</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.shotComment&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+  
+  <span class="nv">playerTurnFinished = </span><span class="nf">(playerInfo) -&gt;</span>
+    <span class="k">if</span> <span class="o">!</span><span class="nx">player1Color</span> <span class="o">&amp;&amp;</span> <span class="nx">playerInfo</span><span class="p">[</span><span class="nx">currentPlayer</span><span class="p">]</span>
+      <span class="nv">player1Color = </span><span class="nx">playerInfo</span><span class="p">[</span><span class="nx">currentPlayer</span><span class="p">]</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.hud #p&#39;</span><span class="o">+</span><span class="nx">currentPlayer</span><span class="p">).</span><span class="nx">append</span><span class="p">(</span><span class="s1">&#39;&amp;nbsp;&amp;nbsp&#39;</span><span class="o">+</span><span class="nx">player1Color</span><span class="o">+</span><span class="s1">&#39;s&#39;</span><span class="p">)</span>
+      <span class="nv">op = </span><span class="nx">sc</span><span class="p">.</span><span class="nx">otherPlayer</span><span class="p">(</span><span class="nx">currentPlayer</span><span class="p">)</span>
+      <span class="nv">player2Color = </span><span class="nx">playerInfo</span><span class="p">[</span><span class="nx">op</span><span class="p">]</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.hud #p&#39;</span><span class="o">+</span><span class="nx">op</span><span class="p">).</span><span class="nx">append</span><span class="p">(</span><span class="s1">&#39;&amp;nbsp;&amp;nbsp&#39;</span><span class="o">+</span><span class="nx">playerInfo</span><span class="p">[</span><span class="nx">op</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;s&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="nx">sc</span><span class="p">.</span><span class="nx">isGameOver</span><span class="p">()</span>
+      <span class="nx">endGame</span> <span class="nx">sc</span><span class="p">.</span><span class="nx">getWinner</span><span class="p">()</span>
+    <span class="k">else</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.shotComment&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s1">&#39;Oooh and that was a bad miss!&#39;</span><span class="p">)</span>
+      <span class="nx">switchPlayer</span><span class="p">()</span>
+    
+  <span class="nv">onCollision = </span><span class="nf">(collisionSpeed) -&gt;</span>
+    <span class="nv">volume = </span><span class="nb">Math</span><span class="p">.</span><span class="nx">min</span><span class="p">(</span><span class="nx">collisionSpeed</span> <span class="err">/ MAX_BALL_SPEED, 1)</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>console.log "playing collision audio volume #{volume}"</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nv">collisionSound.volume = </span><span class="nx">volume</span>
+    <span class="nx">collisionSound</span><span class="p">.</span><span class="nx">play</span><span class="p">()</span>
+    
+  <span class="nv">switchPlayer = </span><span class="o">-&gt;</span>
+    <span class="nv">currentPlayer = </span><span class="k">if</span> <span class="nx">currentPlayer</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">then</span> <span class="mi">2</span> <span class="k">else</span> <span class="mi">1</span>
+    <span class="nx">updateHUD</span><span class="p">()</span>
+    
+  <span class="nv">resetHUD = </span><span class="o">-&gt;</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.hud #p1&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s1">&#39;Player 1&#39;</span><span class="p">)</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.hud #p2&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s1">&#39;Player 2&#39;</span><span class="p">)</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.hud span&#39;</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s1">&#39;background-color&#39;</span><span class="p">,</span> <span class="s1">&#39;white&#39;</span><span class="p">)</span>
+    
+  <span class="nv">updateHUD = </span><span class="nf">(player=currentPlayer)-&gt;</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.hud span&#39;</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s1">&#39;background-color&#39;</span><span class="p">,</span> <span class="s1">&#39;white&#39;</span><span class="p">)</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.hud #p&#39;</span><span class="o">+</span><span class="nx">player</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s1">&#39;background-color&#39;</span><span class="p">,</span> <span class="s1">&#39;#00DD00&#39;</span><span class="p">)</span>
+    
+  <span class="nv">updateShotData = </span><span class="o">-&gt;</span>
+    <span class="nv">eng = </span><span class="nx">sc</span><span class="p">.</span><span class="nx">getEnglish</span><span class="p">()</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#force&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">roundDecimal</span><span class="p">(</span><span class="nx">getCueSpeed</span><span class="p">()))</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#english&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s2">&quot;Horizontal: #{roundDecimal(eng.horizontal)}&lt;br/&gt;Vertical: #{roundDecimal(eng.vertical)}&quot;</span><span class="p">)</span>
+  
+  <span class="nv">mouseMove = </span><span class="nf">(evt) -&gt;</span>
+    <span class="nx">evt</span><span class="p">.</span><span class="nx">stopPropagation</span><span class="p">()</span>
+    <span class="nv">pnt = </span><span class="nx">cevents</span><span class="p">.</span><span class="nx">mouseMove</span><span class="p">(</span><span class="nx">evt</span><span class="p">)</span>
+    <span class="nx">sc</span><span class="p">.</span><span class="nx">updateCue</span><span class="p">(</span><span class="nx">pnt</span><span class="p">)</span> <span class="nx">unless</span> <span class="nx">shooting</span>
+      
+  <span class="nv">mouseDown = </span><span class="nf">(evt) -&gt;</span>
+    <span class="nx">evt</span><span class="p">.</span><span class="nx">stopPropagation</span><span class="p">()</span>
+    <span class="nv">pnt = </span><span class="nx">cevents</span><span class="p">.</span><span class="nx">mouseDown</span><span class="p">(</span><span class="nx">evt</span><span class="p">)</span>
+    <span class="nx">unless</span> <span class="nx">shooting</span>
+      <span class="nx">sc</span><span class="p">.</span><span class="nx">initShot</span> <span class="nx">pnt</span>
+      <span class="nx">startShot</span><span class="p">()</span>
+
+  <span class="nv">mouseUp = </span><span class="nf">(evt) -&gt;</span>
+    <span class="nx">evt</span><span class="p">.</span><span class="nx">stopPropagation</span><span class="p">()</span>
+    <span class="nx">shoot</span><span class="p">()</span> <span class="k">if</span> <span class="nx">shooting</span>
+    <span class="nv">shooting = </span><span class="kc">false</span>
+  </pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>prevent arrow keys from scrolling around</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">keyDown = </span><span class="nf">(evt) -&gt;</span>
+    <span class="k">if</span> <span class="p">[</span><span class="mi">37</span><span class="p">..</span><span class="mi">40</span><span class="p">].</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">evt</span><span class="p">.</span><span class="nx">keyCode</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+      <span class="nx">evt</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">()</span>
+      
+  <span class="nv">keyUp = </span><span class="nf">(evt) -&gt;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s2">&quot;on key up #{evt.keyCode}&quot;</span>
+    <span class="nx">evt</span><span class="p">.</span><span class="nx">stopPropagation</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kc">false</span> <span class="k">if</span> <span class="nx">shooting</span>
+    <span class="nv">dir = </span><span class="kc">null</span>
+    
+    <span class="k">switch</span> <span class="nx">evt</span><span class="p">.</span><span class="nx">keyCode</span>
+      <span class="k">when</span> <span class="mi">37</span><span class="p">,</span> <span class="mi">65</span>
+        <span class="nv">dir = </span><span class="s1">&#39;l&#39;</span>
+      <span class="k">when</span> <span class="mi">39</span><span class="p">,</span> <span class="mi">68</span>
+        <span class="nv">dir = </span><span class="s1">&#39;r&#39;</span>
+      <span class="k">when</span> <span class="mi">38</span><span class="p">,</span> <span class="mi">87</span>
+        <span class="nv">dir = </span><span class="s1">&#39;u&#39;</span>
+      <span class="k">when</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">83</span>
+        <span class="nv">dir = </span><span class="s1">&#39;d&#39;</span>
+    
+    <span class="nx">sc</span><span class="p">.</span><span class="nx">moveCue</span><span class="p">(</span><span class="nx">dir</span><span class="p">)</span> <span class="k">if</span> <span class="nx">dir</span><span class="o">?</span>
+    <span class="nx">updateShotData</span><span class="p">()</span>
+    
+  <span class="nv">newGame = </span><span class="o">-&gt;</span>
+    <span class="nv">currentPlayer = </span><span class="mi">1</span>
+    <span class="nv">player1Color = player2Color = </span><span class="kc">null</span>
+    <span class="nv">winner = </span><span class="kc">null</span>
+    <span class="nx">resetHUD</span><span class="p">()</span>
+    <span class="nx">updateHUD</span><span class="p">()</span>
+    <span class="nx">sc</span><span class="p">.</span><span class="nx">newGame</span><span class="p">()</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#newgame&#39;</span><span class="p">).</span><span class="nx">hide</span><span class="p">()</span>
+  
+  <span class="nv">endGame = </span><span class="nf">(winner) -&gt;</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.hud #p&#39;</span><span class="o">+</span><span class="nx">winner</span><span class="p">).</span><span class="nx">append</span><span class="p">(</span><span class="s1">&#39;&amp;nbsp; ** WINNER&#39;</span><span class="p">)</span>
+    <span class="nx">updateHUD</span><span class="p">(</span><span class="nx">winner</span><span class="p">)</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#newgame&#39;</span><span class="p">).</span><span class="nx">show</span><span class="p">()</span>
+    </pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>main <br />
+Create main pool table physics object</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">sc = </span><span class="nx">PoolTable</span><span class="p">(</span><span class="nx">context</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nv">width: </span><span class="nx">canvas</span><span class="p">.</span><span class="nx">width</span>
+    <span class="nv">height: </span><span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span>
+    <span class="nv">tableSize: </span><span class="mi">300</span>
+    <span class="nv">onCollision: </span><span class="nx">onCollision</span>
+    <span class="nv">onEndTurn: </span><span class="nx">playerTurnFinished</span>
+  <span class="p">})</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>Load sounds</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nx">loadAudio</span><span class="p">()</span>
+  
+  <span class="nv">cevents = </span><span class="nx">canvasEvents</span><span class="p">(</span><span class="nx">canvas</span><span class="p">)</span>
+  <span class="nx">canvas</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;mousedown&#39;</span><span class="p">,</span> <span class="nx">mouseDown</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+  <span class="nx">canvas</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;mouseup&#39;</span><span class="p">,</span> <span class="nx">mouseUp</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+  <span class="nx">canvas</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;mousemove&#39;</span><span class="p">,</span> <span class="nx">mouseMove</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+  <span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">keydown</span><span class="p">(</span><span class="nx">keyDown</span><span class="p">)</span>
+  <span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">keyup</span><span class="p">(</span><span class="nx">keyUp</span><span class="p">)</span>
+  
+  <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#newgame a&#39;</span><span class="p">).</span><span class="nx">click</span> <span class="nx">newGame</span>
+  
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 
