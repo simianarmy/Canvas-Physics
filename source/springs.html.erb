@@ -9,6 +9,7 @@
       <a href="#" class="particleOnSpring">Particle on spring</a> |
       <a href="#" class="multiSpring">Connected springs</a>
     </nav>
+    
     <ul id="controls">
       <li>
         <label>Spring length: </label><input type="range" name="springLen" min="10" max="600" step="5" value="300"/>
@@ -40,13 +41,13 @@
         <span id="pMass"></span>
       </li>
     </ul>
-    
-    <canvas id="maincanvas" width="800" height="600"></canvas>
     <div id="info">
       <span id="ffsInstructions">Use Up / Down Arrows to move spring endpoint</span>
-      <span id="posInstructions">Click and throw the particle around</span>
+      <span id="posInstructions">Click and throw a particle</span>
       <span id="instructions"/>
     </div>
+    <canvas id="maincanvas" width="800" height="600"></canvas>
+    
   </section>
 </div> <!--! end of #container -->
 <script defer src="js/springs.js"></script>

@@ -45,7 +45,8 @@ class Spring extends Line
   # General purpose function to determine force on a particle due to the 
   # spring (at spring endpoint).  
   # This function must be used when neither endpoint of the spring is fixed in place.
-  # @params: {Object} opts options
+  # @params: {Object} opts options:
+  #   reverse: {Boolean} true=start point, false=endpoint
   # @return {Vector} force vector
   forceOnEndpoint: (opts={}) ->
     # Caller can pass reverse: true to calculate force on the 'start' 
@@ -61,8 +62,8 @@ class Spring extends Line
       vel1 = @svel
       vel2 = @evel
       
-    elasticity = 0
-    damping = 0
+    elasticity = @elasticity
+    damping = @damping
     v = pnt1.subtract(pnt2)
     d = v.mag()
     return Vector.Zero() if d == 0
@@ -79,15 +80,15 @@ class Spring extends Line
     
     # apply 1st elastic limit (increased force and damping)
     if (d >= @elasticLimit) || (d <= @minLength) || (d <= @length and @compressiveness == Spring.RIGID)
-      elasticity = @elasticity * 20
-      damping = Math.max(@damping*10, 20)
+      elasticity *= 20
+      damping = Math.max(damping*10, 20)
     
     # calculate force by Hooke's law
     e = d - @length
     vec = v.divide(d)
-    f = if @damping > 0
+    f = if damping > 0
       comp = vel1.subtract(vel2).component(vec)
-      @damping * comp + @elasticity * e
+      damping * comp + elasticity * e
     else
       elasticity * e
     

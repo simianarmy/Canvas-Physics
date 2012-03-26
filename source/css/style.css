@@ -262,6 +262,9 @@ label {
   min-width: 100px;
 }
 
+#info {
+  color: red;
+}
 /* ==|== media queries ======================================================
    PLACEHOLDER Media Queries for Responsive Design.
    These override the primary ('mobile first') styles

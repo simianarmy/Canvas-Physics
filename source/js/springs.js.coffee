@@ -50,6 +50,12 @@ $(document).ready ->
   posOffset = 0
   dragPoints = []
   
+  walls = [new Line(0, 0, canvas.width, 0),
+    new Line(canvas.width, 0, 0, canvas.height),
+    new Line(0, canvas.height, 0, -canvas.height),
+    new Line(canvas.width, canvas.height, -canvas.width, 0)
+    ]
+    
   # Collect control values
   updateControls = ->
     springLen = parseInt $('input[name=springLen]').val()
@@ -70,11 +76,6 @@ $(document).ready ->
     
     spring? && updateSpring(spring)
     particle? && updateParticle(particle)
-    walls = [new Line(0, 0, canvas.width, 0),
-      new Line(canvas.width, 0, 0, canvas.height),
-      new Line(0, canvas.height, 0, -canvas.height),
-      new Line(canvas.width, canvas.height, -canvas.width, 0)
-      ]
     
   # update spring properties (from controls)
   updateSpring = (spring) ->
@@ -126,6 +127,8 @@ $(document).ready ->
     dhmParams = Spring.calculateDHMParams(initPos, initVel, springElasticity, springDamping)
     throwTime = (new Date).getTime()      
     
+    updateConnectingSprings(p) if p.springs?
+      
   # Force on particle due to spring simulation
   forceFromStringSim = ->
     console.log "init force from spring simulation"
@@ -185,6 +188,7 @@ $(document).ready ->
   multiSpringSim = ->
     console.log "Multispring simulation"
     sim = 'multi'
+    $('#instructions').show().html('Click and throw middle particle')
     
     # Start w/ 2 springs & 2 particles
     s1 = new Spring($V([canvas.width/2, canvas.height-40, 0]), $V([0, -springLen, 0]), 
@@ -198,7 +202,7 @@ $(document).ready ->
       springLen)
     updateSpring s2
     
-    # particle attached to s1 & s2
+    # particle attached to s1 
     pa = new Circle(s1.x(), s1.y(), 0, {
       color: 'black',
       id: 'p0'
@@ -218,9 +222,10 @@ $(document).ready ->
     updateParticle p2
 
     # start last particle moving sideways
-    p2.speed = 100
-    p2.direction = $V([1, 1, 0])
-    s2.evel = p2.direction.x(p2.speed)
+    # p2.speed = 100
+    #     p2.direction = $V([1, 1, 0])
+    #     p2.setVelocity(p2.direction.x(p2.speed))
+    #     s2.evel = p2.velocity.dup()
     
     # s1 point is fixed
     # set particle/spring pairings for force calculations
@@ -231,8 +236,8 @@ $(document).ready ->
 
     objects = [s1, s2, pa, p1, p2]
     updateObjectsFn = updateMultiSpringSim
-    # start animation
-    paused = false
+    paused = true
+    particle = p1
     
   # Draw objects on canvas
   drawScene = (objects, ts) ->
@@ -301,11 +306,13 @@ $(document).ready ->
         sp.spring.pnt2 = p.pos
         sp.spring.evel = p.velocity
               
-  # calculate article position/speed from springs force & gravity
+  # calculate particle position/velocity from springs force & gravity
   # @param {Circle} particle
   # @param {Number} ts timestep
-  updateParticleFromSpringForces = (p, ts, count=1) ->
+  # @param {Number} rlevel recursion level
+  updateParticleFromSpringForces = (p, ts, rlevel=1) ->
     ten = $V([0, p.mass * gravity, 0])
+    maxRecursion = false
     
     for sp in p.springs
       f = sp.spring.forceOnEndpoint({reverse: sp.end == 1})
@@ -313,13 +320,15 @@ $(document).ready ->
         #queueOutput "#{p.id} BOUNCE!"
         # resolve collision
         collisions.resolveCollisionFixed p, sp.spring.toVector()
-        p.pos = p.pos.add(p.direction.x(p.speed*ts))
+        # Move particle so that next force calculation returns something different!!
+        p.moveByTime ts
         updateConnectingSprings p
         #console.log "new direction (#{p.id}): #{p.direction.inspect()}"
-        if count < 10 # prevent inf. recursion
-          updateParticleFromSpringForces(p, ts, count + 1)
+        if rlevel < 5 # prevent inf. recursion
+          updateParticleFromSpringForces(p, ts, rlevel + 1)
         else
           console.log "BOUNCE MAX!"
+          maxRecursion = true
         return
       else
         ten = ten.add(f)
@@ -327,9 +336,9 @@ $(document).ready ->
     # apply force to particle
     queueOutput "tension on p #{p.id}: #{ten.inspect()}"
     acc = ten.divide(p.mass)
-    # Try to dampen serious accelerations - doesn't help :(
-    acc.elements[0] -= 100 if acc.e(1) >= 500
-    acc.elements[1] -= 100 if acc.e(2) >= 500
+    # Try to prevent too sudden jumps in acceleration
+    if acc.mag() > 500
+      acc = acc.divide(2)
     p.pos = p.pos.add(p.direction.x(p.speed*ts)).add(acc.x(ts*ts/2))
     p.setVelocity p.velocity.add(acc.x(ts))
     updateConnectingSprings p
