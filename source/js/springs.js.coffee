@@ -18,7 +18,7 @@ $(document).ready ->
   canvas = new Canvas(canvasEl)
   canvas.setOrigin('bottomleft')
   events = canvasEvents canvasEl
-  elapsed = lastTime = 0
+  elapsed = lastTime = lastTimestep = 0
   sim = 'force'
   paused = true
   updateObjectsFn = null
@@ -32,7 +32,7 @@ $(document).ready ->
   # particle properties
   particleMass = 0
   # world properties
-  gravity = 10
+  gravity = 0
   energy = null
   forceOnEnd = Vector.Zero()
   dhmParams = null
@@ -190,7 +190,7 @@ $(document).ready ->
     sim = 'multi'
     $('#instructions').show().html('Click and throw middle particle')
     
-    # Start w/ 2 springs & 2 particles
+    # Start w/ 2 springs & 3 particles
     s1 = new Spring($V([canvas.width/2, canvas.height-40, 0]), $V([0, -springLen, 0]), 
       $V([0, 0, 0]), 
       $V([0, 0, 0]),
@@ -281,15 +281,16 @@ $(document).ready ->
             p.pos.elements[0] = canvas.width - p.radius
             p.direction.elements[0] = 0
           if p.y() < p.radius
-            p.pos.elements[0] = p.radius
+            p.pos.elements[1] = p.radius
             p.direction.elements[1] = 0
           else if p.y() > canvas.height - p.radius
             p.pos.elements[1] = canvas.height - p.radius
-            p.direction.elements[2] = 0
+            p.direction.elements[1] = 0
             
           break        
       
       if changed
+        #p.lastPos = p.pos.dup()
         if p.springs?
           # spring(s) endpoint property update
           updateConnectingSprings(p)
@@ -316,6 +317,9 @@ $(document).ready ->
     
     for sp in p.springs
       f = sp.spring.forceOnEndpoint({reverse: sp.end == 1})
+      
+      # TODO: Calculations here break the simulation!
+      # CAN SOMETHING BE DONE WITHOUT RECURSION?
       if f == Spring.BOUNCE
         #queueOutput "#{p.id} BOUNCE!"
         # resolve collision
@@ -323,8 +327,9 @@ $(document).ready ->
         # Move particle so that next force calculation returns something different!!
         p.moveByTime ts
         updateConnectingSprings p
-        #console.log "new direction (#{p.id}): #{p.direction.inspect()}"
-        if rlevel < 5 # prevent inf. recursion
+        console.log "new direction (#{p.id}): #{p.direction.inspect()}"
+        
+        if rlevel < 3 # prevent inf. recursion
           updateParticleFromSpringForces(p, ts, rlevel + 1)
         else
           console.log "BOUNCE MAX!"
@@ -339,8 +344,18 @@ $(document).ready ->
     # Try to prevent too sudden jumps in acceleration
     if acc.mag() > 500
       acc = acc.divide(2)
-    p.pos = p.pos.add(p.direction.x(p.speed*ts)).add(acc.x(ts*ts/2))
-    p.setVelocity p.velocity.add(acc.x(ts))
+      
+    # Try verlet with time-correction
+    if p.lastPos?
+      step = (p.pos.subtract(p.lastPos)).x(ts / lastTimestep).add(acc.x(ts*ts))
+      p.lastPos = p.pos.dup()
+      p.pos = p.pos.add(step)
+    else
+      p.lastPos = p.pos.dup()
+      p.pos = p.pos.add(p.direction.x(p.speed*ts)).add(acc.x(ts*ts/2))
+
+    #p.setVelocity p.velocity.add(acc.x(ts))
+    p.setVelocity p.pos.subtract(p.lastPos).add(acc.x(ts))
     updateConnectingSprings p
     
     #console.log "new direction (#{p.id}): #{p.direction.inspect()}"
@@ -406,9 +421,10 @@ $(document).ready ->
   
       updateObjectsFn.call(@, elapsed)
       checkCollisions(elapsed)
+      lastTimestep = elapsed
       
     lastTime = timeNow
-
+    
   # tick funtion
   tick = ->
     requestAnimFrame(tick) 
