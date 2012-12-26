@@ -43,21 +43,68 @@ collisions = (->
     # return (v2.x * deltapy - v2.y * deltapx) / (p1.y * v2.x - p1.x * v2.y)
     con = sc1 * con2 - sc2 * con1
     con / det
+
+  # rrVertexCollisionStraight
+  # Math and Physics for Programmers p. 187
+  # @returns {float}
+  rrVertexCollisionStraight = (rec1, rec2, ts) ->
+    r1Disp = rec1.velocity.x(ts) # Get 1st rectangle displacement
+    r2Disp = rec2.velocity.x(ts)
     
+    # Calculate the points of rec1 to test.
+    r1 = rec1.side1()
+    r2 = rec1.side2()
+    points = pointsToCheck(rec1.center(), r1, r2, r1Disp.subtract(r2Disp))
+    
+    # Check each point for intersection with rec2
+    t = 2
+    for p in points
+      console.log('Testing ' + rec1.name + ' point: ' + p.inspect() + ' against ' + rec2.name)
+      t2 = pointRectangleIntersection(p, r1Disp, rec2)
+      if t2 != collisions.NONE
+        t = Math.min(t, t2)
+        #console.log('** using t: ' + t + ' t2: ' + t2)
+  
+    return collisions.NONE if (t == 2)
+    return t
+  
+  # rrVertexCollisionAngled
+  # Math and Physics for Programmers p. 189
+  # @returns {float}
+  rrVertexCollisionAngled = (rec1, rec2, ts) ->
+    r1Disp = rec1.velocity.x(ts) # Get 1st rectangle displacement
+    r2Disp = rec2.velocity.x(ts)
+    
+    # calculate points of rec1 to test
+    r1 = rec1.side1()
+    r2 = rec1.side2()
+    points = pointsToCheck(rec1.center(), r1, r2, r1Disp.subtract(r2Disp))
+    t = 2
+    for p in points
+      console.log('Testing ' + rec1.name + ' point: ' + p.inspect() + ' against ' + rec2.name)
+      t2 = pointRectangleIntersection(p, r1Disp, rec2)
+      if t2 != collisions.NONE
+        t = Math.min(t, t2)
+        #console.log('** using t: ' + t + ' t2: ' + t2)
+  
+    return collisions.NONE if (t == 2)
+    return t
+  
   # pointsToCheck
   # Math and Physics for Programmers p. 187
+  # @param {Vector} center
   # @param {Vector} r1
   # @param {Vector} r2
   # @param {Vector} disp displacement vector
   # @returns {Array[Vector]} points
   # IMPORTANT: Assumes top-left origin coordinate system (+y = down)
-  pointsToCheck = (r1, r2, disp) ->
+  # TODO: Use Canvas.topLeftOrigin value to handle all both cases
+  pointsToCheck = (center, r1, r2, disp) ->
     points = []
     c1 = disp.component(r1)
     c2 = disp.component(r2)
     #console.log("pointsToCheck r1: " + r1 + ", r2: " + r2 + ", disp: " + disp)
     #console.log("pointsToCheck c1: " + c1 + ", c2: " + c2)
-
     if (c1 > 0)
       points.push(r1.add(r2))
       points.push(r1.subtract(r2))
@@ -76,57 +123,12 @@ collisions = (->
       else
         points.push(r1.subtract(r2))
 
+    # translate all points around position of the rectangle
+    for i in [0..points.length-1]
+      points[i] = center.add(points[i])
+      
     return points
-
-  # rrVertexCollisionStraight
-  # Math and Physics for Programmers p. 187
-  # @returns {float}
-  rrVertexCollisionStraight = (rec1, rec2, ts) ->
-    r1Disp = rec1.velocity.x(ts) # Get 1st rectangle displacement
-    r2Disp = rec2.velocity.x(ts)
-    r1 = rec1.side1().multiplyVec(rec1.axis)
-    r2 = rec1.side2().multiplyVec(rec1.normal())
-    console.log("r1 disp: " + r1Disp.toString())
-    #     console.log("xvector: " + xvector)
-    #     console.log("yvector: " + yvector)
-    #     console.log("r1: " + r1)
-    #     console.log("r2: " + r2)
-
-    # Calculate the points to test.
-    points = pointsToCheck(r1, r2, r1Disp.subtract(r2Disp))
-    t = 2
-    for p in points
-      adjpnt = p.add(rec1.center())
-      #console.log('Testing ' + rec1.name + ' point: ' + adjpnt.inspect() + ' against ' + rec2.name)
-      t2 = pointRectangleIntersection(adjpnt, r1Disp, rec2)
-      if t2 != collisions.NONE
-        t = Math.min(t, t2)
-        #console.log('** using t: ' + t + ' t2: ' + t2)
-  
-    return collisions.NONE if (t == 2)
-    return t
-  
-  # rrVertexCollisionAngled
-  # Math and Physics for Programmers p. 189
-  # @returns {float}
-  rrVertexCollisionAngled = (rec1, rec2, ts) ->
-    # calculate points to test
-    r1Disp = rec1.velocity.x(ts) # Get 1st rectangle displacement
-    r2Disp = rec2.velocity.x(ts)
-    r1 = rec1.side1().multiplyVec(rec1.axis)
-    r2 = rec1.side2().multiplyVec(rec1.axis.normal())
-    points = pointsToCheck(r1, r2, r1Disp.subtract(r2Disp))
-    t = 2
-    for p in points
-      #console.log('Testing ' + rec1.name + ' point: ' + adjpnt.inspect() + ' against ' + rec2.name)
-      t2 = pointRectangleIntersection(p, r1Disp, rec2)
-      if t2 != collisions.NONE
-        t = Math.min(t, t2)
-        #console.log('** using t: ' + t + ' t2: ' + t2)
-  
-    return collisions.NONE if (t == 2)
-    return t
-    
+      
   # pointRectangleIntersection
   # Collision detection for point moving with displacement pntDisp 
   # and stationary rectangle
@@ -148,12 +150,12 @@ collisions = (->
         vdisp = sides[i].x(m).x(2)
         #console.log("i: " + i + ", m: " + m + ", side: " + sides[i] + ", axis: " + axes[i])
         # console.log("c * m: " + cm)
-        console.log("vert: " + vert)
-        console.log('vert disp: ' + vdisp)
+        console.log("against vertex: " + vert + ', ' + vdisp)
+        #console.log('vert disp: ' + vdisp)
         # FAILS - GIVES COLLISION TIMES FOR NON-INTERSECTION LINES .. WTF?
         #t1 = intersectionTime(pnt, pntDisp, vert, vdisp)
         t1 = intersection(pnt, endpoint, vert, vert.add(vdisp))
-        #console.log('t: ' + t1)
+        console.log('t: ' + t1)
         #debugger if t1 != 0 && t1 < 1 && t1 > 0
         if t1 && t1 != 0
           t = Math.min(t, t1)

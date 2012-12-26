@@ -29,20 +29,22 @@ $(document).ready ->
     for r in objects
       canvas.drawRect(r)
       drawText(r.pos.inspect() + ' ' + r.radRotation() + ' rads', 10, 10 + (i++ * 20))
+      for r in r.vertices()
+        drawText($V([r.e(1).toFixed(2), r.e(2).toFixed(2)]).inspect(), r.e(1), r.e(2))
 
   setupScene = ->
     axisAligned = ($("input[name=axisaligned]:checked").length > 0)
-    r1 = new Rectangle($V([canvas.width/2 - 100, canvas.height/2]), $V([80, 0, 0]), $V([0, 30, 0]))
-    r2 = new Rectangle($V([canvas.width/2 + 200, canvas.height/3]), $V([50, 0, 0]), $V([0, 100, 0]))
+    r1 = new Rectangle($V([canvas.width/2 - 140, canvas.height/2]), $V([80, 0, 0]), $V([0, 30, 0]))
+    r2 = new Rectangle($V([canvas.width/2 + 100, canvas.height/3]), $V([50, 0, 0]), $V([0, 100, 0]))
     r1.name = 'rect 1'
     r2.name = 'rect 2'
     r1.color = "rgb(200, 0, 0)"
     r2.color = "#00FF00"
-    r1.setVelocity $V([40, 0, 0])
+    r1.setVelocity $V([40, -10, 0])
     r2.setVelocity $V([-20, 0, 0])
     if !axisAligned
-        r1.setRotation 30
-        r2.setRotation -10
+        r1.setRotation 20
+        r2.setRotation 60
     objects = [r1, r2]
 
   updateObjects = (t) ->
@@ -55,7 +57,8 @@ $(document).ready ->
       collisions.rectangleRectangleCollisionStraight(r1, r2, t)
     else
       collisions.rectangleRectangleCollisionAngled(r1, r2, t)
-      
+    
+    console.log('t = ' + res)
     if (res != collisions.NONE) && collisions.isImpendingCollision(Math.abs(res))
       console.log('*** collision in ' + res)
       paused = true
