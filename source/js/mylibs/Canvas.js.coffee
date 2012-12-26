@@ -16,7 +16,7 @@ Canvas = (() ->
     @ctxt = canvasEl.getContext(@mode)
     @width = canvasEl.width
     @height = canvasEl.height
-    @worldView = true # Default origin top left
+    Canvas.topLeftOrigin = @worldView = true # Default origin top left
   
   context = () -> @ctxt
   
@@ -27,12 +27,12 @@ Canvas = (() ->
       # translate world for origin at bottom left
       @ctxt.translate(0, @height)
       @ctxt.scale(1, -1)
-      @worldView = false
+      Canvas.topLeftOrigin = @worldView = false
     else if !@worldView
       # bottom left is default
       @ctxt.scale(1, -1)
       @ctxt.translate(0, -@height)
-      @worldView = true
+      Canvas.topLeftOrigin = @worldView = true
   
   # @return true if drawing with world view coordinates (default = true)
   inWorldView = () ->
@@ -102,13 +102,30 @@ Canvas = (() ->
   # Draw a rectangle
   # @param {Shape} a Rectangle object
   # @param {Object} opts draw options
-  drawRect = (rect, opts) ->
-    o = rect.origin() # get origin vector
-    @ctxt.beginPath();
-    @ctxt.rect(o.e(1), o.e(2), rect.width, rect.height)
-    @ctxt.closePath()
+  drawRect = (rect, opts) ->    
+    c = rect.pos
+    @ctxt.save()
+    @ctxt.translate c.e(1), c.e(2)
+    @ctxt.rotate rect.radRotation()
+
+    if rect.color
+      @ctxt.fillStyle = rect.color
+
+    @ctxt.fillRect(-rect.width*0.5, -rect.height*0.5, rect.width, rect.height)
+    @ctxt.restore()
+      
+  # draw line from endpoints
+  # @param {Vector} pnt1 starting point
+  # @param {Vector} pnt2 ending point
+  drawPolygon = (points) ->
+    @ctxt.beginPath()
+    @ctxt.moveTo points[0].e(1), points[0].e(2)
+    for i in [1..points.length-1]
+      @ctxt.lineTo points[i].e(1), points[i].e(2)
+    @ctxt.lineTo points[0].e(1), points[0].e(2)
     @ctxt.stroke()
-    
+    @ctxt.closePath()
+      
   # rotate the canvas
   # @params {Float} rot radians
   rotate = (rot) ->
@@ -144,6 +161,7 @@ Canvas = (() ->
     drawLineFromPoints: drawLineFromPoints
     drawEllipse: drawEllipse
     drawRect: drawRect
+    drawPolygon: drawPolygon
     inContext: inContext
     inWorldView: inWorldView
     context: context

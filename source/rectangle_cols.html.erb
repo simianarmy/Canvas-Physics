@@ -1,0 +1,23 @@
+<% content_for(:head) do %>
+<% end %>
+<div id="container">
+  <header>
+    <h1 class="title">Canvas: Rectangle collison detection</h1>
+  </header>
+  <div id="main" role="main">
+    <ul id="controls">
+      <li>
+        <input type="checkbox" name="axisaligned" value="4" checked="checked"> Axis-aligned rectangles
+      </li>
+    </ul>
+    Click on canvas to play or pause
+    <canvas id="maincanvas" width="800" height="600"></canvas>
+    <div id="info">
+    </div>
+  </div>
+  <footer>
+    Source: 
+    <a href="docs/rect_collisions.js.html">rect_collisions.js</a>
+  </footer>
+</div> <!--! end of #container -->
+<script defer src="js/rect_collisions.js"></script>

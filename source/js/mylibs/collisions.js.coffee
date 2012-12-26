@@ -22,8 +22,7 @@ collisions = (->
       (con1 - s * sc1) / tc1
     else
       (con2 - s * sc2) / tc2
-    
-  
+
   # intersectionTime  
   # @param {Vector} p1 - point1  
   # @param {Vector} v1 - point1 displacement  
@@ -31,17 +30,161 @@ collisions = (->
   # @param {Vector} v2 - point2 displacement  
   # @returns {Number} time of intersection
   intersectionTime = (p1, v1, p2, v2) ->
-    tc1 = v1.e(1)
-    tc2 = v1.e(2)
-    sc1 = v2.e(1)
-    sc2 = v2.e(2)
-    con1 = p2.e(1) - p1.e(1)
-    con2 = p2.e(2) - p1.e(2)
-    det = tc2 * sc1 - tc1 * sc2
+    tc1 = v1.e(1) # v1.x
+    tc2 = v1.e(2) # v1.y
+    sc1 = v2.e(1) # v2.x
+    sc2 = v2.e(2) # v2.y
+    con1 = p2.e(1) - p1.e(1)  # p2.x - p1.x
+    con2 = p2.e(2) - p1.e(2)  # p2.y - p1.y
+  
+    det = tc2 * sc1 - tc1 * sc2 
     return 0 if det is 0
     
+    # return (v2.x * deltapy - v2.y * deltapx) / (p1.y * v2.x - p1.x * v2.y)
     con = sc1 * con2 - sc2 * con1
     con / det
+    
+  # pointsToCheck
+  # Math and Physics for Programmers p. 187
+  # @param {Vector} r1
+  # @param {Vector} r2
+  # @param {Vector} disp displacement vector
+  # @returns {Array[Vector]} points
+  # IMPORTANT: Assumes top-left origin coordinate system (+y = down)
+  pointsToCheck = (r1, r2, disp) ->
+    points = []
+    c1 = disp.component(r1)
+    c2 = disp.component(r2)
+    #console.log("pointsToCheck r1: " + r1 + ", r2: " + r2 + ", disp: " + disp)
+    #console.log("pointsToCheck c1: " + c1 + ", c2: " + c2)
+
+    if (c1 > 0)
+      points.push(r1.add(r2))
+      points.push(r1.subtract(r2))
+    else
+      points.push(r1.x(-1).add(r2))
+      points.push(r1.x(-1).subtract(r2))
+
+    if (c2 > 0)
+      if (c1 > 0)
+        points.push(r1.x(-1).add(r2))
+      else
+        points.push(r1.add(r2))
+    else
+      if (c1 > 0)
+        points.push(r1.x(-1).subtract(r2))
+      else
+        points.push(r1.subtract(r2))
+
+    return points
+
+  # rrVertexCollisionStraight
+  # Math and Physics for Programmers p. 187
+  # @returns {float}
+  rrVertexCollisionStraight = (rec1, rec2, ts) ->
+    r1Disp = rec1.velocity.x(ts) # Get 1st rectangle displacement
+    r2Disp = rec2.velocity.x(ts)
+    r1 = rec1.side1().multiplyVec(rec1.axis)
+    r2 = rec1.side2().multiplyVec(rec1.normal())
+    console.log("r1 disp: " + r1Disp.toString())
+    #     console.log("xvector: " + xvector)
+    #     console.log("yvector: " + yvector)
+    #     console.log("r1: " + r1)
+    #     console.log("r2: " + r2)
+
+    # Calculate the points to test.
+    points = pointsToCheck(r1, r2, r1Disp.subtract(r2Disp))
+    t = 2
+    for p in points
+      adjpnt = p.add(rec1.center())
+      #console.log('Testing ' + rec1.name + ' point: ' + adjpnt.inspect() + ' against ' + rec2.name)
+      t2 = pointRectangleIntersection(adjpnt, r1Disp, rec2)
+      if t2 != collisions.NONE
+        t = Math.min(t, t2)
+        #console.log('** using t: ' + t + ' t2: ' + t2)
+  
+    return collisions.NONE if (t == 2)
+    return t
+  
+  # rrVertexCollisionAngled
+  # Math and Physics for Programmers p. 189
+  # @returns {float}
+  rrVertexCollisionAngled = (rec1, rec2, ts) ->
+    # calculate points to test
+    r1Disp = rec1.velocity.x(ts) # Get 1st rectangle displacement
+    r2Disp = rec2.velocity.x(ts)
+    r1 = rec1.side1().multiplyVec(rec1.axis)
+    r2 = rec1.side2().multiplyVec(rec1.axis.normal())
+    points = pointsToCheck(r1, r2, r1Disp.subtract(r2Disp))
+    t = 2
+    for p in points
+      #console.log('Testing ' + rec1.name + ' point: ' + adjpnt.inspect() + ' against ' + rec2.name)
+      t2 = pointRectangleIntersection(p, r1Disp, rec2)
+      if t2 != collisions.NONE
+        t = Math.min(t, t2)
+        #console.log('** using t: ' + t + ' t2: ' + t2)
+  
+    return collisions.NONE if (t == 2)
+    return t
+    
+  # pointRectangleIntersection
+  # Collision detection for point moving with displacement pntDisp 
+  # and stationary rectangle
+  # @param {Vector} pnt point
+  # @param {Vector} pntDisp displacement
+  # @param {Rectangle} rec rectangle
+  # @returns {Number} time to collision if any
+  pointRectangleIntersection = (pnt, pntDisp, rec) ->
+    c = rec.side1().add(rec.side2())
+    t = 2 # Start with a high value of t
+    sides = [rec.side1(), rec.side2()]
+    axes = [rec.axis, rec.axis.normal()]
+    endpoint = pnt.add(pntDisp)
+    
+    for i in [0, 1]
+      for m in [1, -1]
+        cm = c.x(m)
+        vert = rec.center().subtract(cm)
+        vdisp = sides[i].x(m).x(2)
+        #console.log("i: " + i + ", m: " + m + ", side: " + sides[i] + ", axis: " + axes[i])
+        # console.log("c * m: " + cm)
+        console.log("vert: " + vert)
+        console.log('vert disp: ' + vdisp)
+        # FAILS - GIVES COLLISION TIMES FOR NON-INTERSECTION LINES .. WTF?
+        #t1 = intersectionTime(pnt, pntDisp, vert, vdisp)
+        t1 = intersection(pnt, endpoint, vert, vert.add(vdisp))
+        #console.log('t: ' + t1)
+        #debugger if t1 != 0 && t1 < 1 && t1 > 0
+        if t1 && t1 != 0
+          t = Math.min(t, t1)
+
+    return collisions.NONE if (t == 2)
+    #console.log('pt in rect intersect: ' + t)
+    return t
+
+  # Rectangle vs rectangle collision detection (axis aligned)
+  # @param {Rectangle} r1
+  # @param {Rectangle} r2
+  # @param {Number} ts timestep
+  # @return {Number} time to collision or NONE
+  rectangleRectangleCollisionStraight = (r1, r2, ts) ->
+    t1 = rrVertexCollisionStraight(r1, r2, ts)
+    t2 = rrVertexCollisionStraight(r2, r1, ts)
+    return t2 if (t1 == collisions.NONE)
+    return t1 if (t2 == collisions.NONE)
+    return Math.min(t1, t2)
+
+  # Rectangle vs rectangle collision detection (angled)
+  # @param {Rectangle} r1
+  # @param {Rectangle} r2
+  # @param {Number} ts timestep
+  # @return {Number} time to collision or NONE
+  rectangleRectangleCollisionAngled = (r1, r2, ts) ->
+    t1 = rrVertexCollisionAngled(r1, r2, ts)
+    t2 = rrVertexCollisionAngled(r2, r1, ts)
+    return t2 if (t1 == collisions.NONE)
+    return t1 if (t2 == collisions.NONE)
+    return Math.min(t1, t2)
     
   # circleCircleCollision
   # Detect collision between 2 circles  
@@ -358,7 +501,7 @@ collisions = (->
       return {t: 0}
         
     collisions.NONE
-    
+
   isImpendingCollision = (ts) ->
     0 < ts <= 1
   
@@ -632,6 +775,8 @@ collisions = (->
   # Return public functions
   {checkCollisions
   detectCollision
+  rectangleRectangleCollisionStraight
+  rectangleRectangleCollisionAngled
   circleWallCollision
   isImpendingCollision
   resolveCollision

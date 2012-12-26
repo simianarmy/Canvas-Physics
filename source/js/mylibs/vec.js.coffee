@@ -79,6 +79,13 @@ Vector::componentVector = (direction) ->
 Vector::divide = (val) ->
   @map (x) -> x / val
 
+# multiplyVec
+#
+# Multiply by another vector
+# @returns {Vector}
+Vector::multiplyVec = (vec) ->
+  @map (x, i) -> x * vec.e(i)
+  
 ### Functions for consistent angular measurements in 2D space ###
 # 
 # Angular calculations must use the same concept of direction of y-axis 
@@ -128,3 +135,6 @@ Vector::angleOf = ->
 # @returns {Number}
 Vector::moment = (p) ->
   @clockwiseNormal().dot(p)
+  
+Vector::toString = ->
+  @inspect()

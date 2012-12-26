@@ -19,6 +19,11 @@ Clone the repository
 
 Navigate to the repository
 
+Install gems (requires Bundler gem)
+
+  `gem install bundler`
+  `bundle`
+
 Build the site with middleman:
   
   `middleman build`
