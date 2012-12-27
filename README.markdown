@@ -21,10 +21,17 @@ Navigate to the repository
 
 Install gems (requires Bundler gem)
 
-  `gem install bundler`
-  `bundle`
+  `> gem install bundler`
+  
+  `> bundle`
+  
+Run Middleman server
 
-Build the site with middleman:
+  `> middleman`
+
+## Deployment
+
+Build the production files
   
   `middleman build`
 
