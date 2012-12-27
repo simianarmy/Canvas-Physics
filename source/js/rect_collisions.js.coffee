@@ -5,7 +5,6 @@
 #= require ./plugins
 #= require mylibs/vec
 #= require mylibs/Math
-#= require mylibs/Array
 #= require mylibs/Rectangle
 #= require mylibs/Canvas
 #= require mylibs/collisions
@@ -17,6 +16,7 @@ $(document).ready ->
   objects = r1 = r2 = null
   paused = true
   axisAligned = true
+  rot = 0
   rev = 'v5'
 
   drawText = (text, x, y) ->
@@ -32,6 +32,8 @@ $(document).ready ->
       for r in r.vertices()
         drawText($V([r.e(1).toFixed(2), r.e(2).toFixed(2)]).inspect(), r.e(1), r.e(2))
 
+    true
+    
   setupScene = ->
     axisAligned = ($("input[name=axisaligned]:checked").length > 0)
     r1 = new Rectangle($V([canvas.width/2 - 140, canvas.height/2]), $V([80, 0, 0]), $V([0, 30, 0]))
@@ -51,14 +53,13 @@ $(document).ready ->
     # update the line's rotation and others
     for r in objects
       r.moveByTime(t)
-
+      
   checkCollisions = (t) ->
     res = if axisAligned
       collisions.rectangleRectangleCollisionStraight(r1, r2, t)
     else
       collisions.rectangleRectangleCollisionAngled(r1, r2, t)
     
-    console.log('t = ' + res)
     if (res != collisions.NONE) && collisions.isImpendingCollision(Math.abs(res))
       console.log('*** collision in ' + res)
       paused = true
