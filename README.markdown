@@ -41,4 +41,4 @@ Point your browser to the local build/index.html file.
 
 All source CoffeeScript and site files are under the source/ directory.
 
-hello there buddy of mine
+well hello there buddy of mine
